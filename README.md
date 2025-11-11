@@ -1,6 +1,7 @@
-# z3nTray
+# z3nTray AIO
 
->tray application for OTP code generation and ZennoPoster process management
+
+>
 
 
 [Русская версия](README_RU.md)
@@ -228,42 +229,8 @@ When killing main ZennoPoster:
 - Check `Tasks.1.dat` exists and size > 0
 - Enable `ShowLogs` to see recovery process
 
-## Differences from z3nCore
 
-### Removed
-- ❌ MemoryMappedFile (shared memory)
-- ❌ Running class with caching
-- ❌ ProcAcc caching
-- ❌ IZennoPosterProjectModel
-- ❌ ZennoPoster-specific Logger
-
-### Added
-- ✅ Direct Process API calls
-- ✅ WMI for command line extraction
-- ✅ MessageBox logging
-- ✅ App.config settings
-- ✅ Standalone operation
-
-### Preserved
-- ✅ Process categorization logic
-- ✅ Termination algorithms
-- ✅ Account extraction from user-data-dir
-- ✅ OTP generation (unchanged)
-
-## License
-
-MIT License - see [LICENSE](LICENSE) file
-
-## Contributing
-
-Pull requests are welcome! For major changes, please open an issue first.
-
-## Support
-
-For issues and questions:
-- GitHub Issues: [Issues](https://github.com/yourusername/OtpTrayApp/issues)
-- Email: your@email.com
 
 ---
 
-**Made with ❤️ for ZennoPoster automation**
+**Made with ❤️ by w3bgr3p**

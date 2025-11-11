@@ -228,42 +228,8 @@ Path.GetFileName() → "534"
 - Убедитесь что `Tasks.1.dat` существует и размер > 0
 - Включите `ShowLogs` для просмотра процесса восстановления
 
-## Отличия от z3nCore
-
-### Удалено
-- ❌ MemoryMappedFile (shared memory)
-- ❌ Класс Running с кешированием
-- ❌ Кеширование ProcAcc
-- ❌ IZennoPosterProjectModel
-- ❌ ZennoPoster-специфичный Logger
-
-### Добавлено
-- ✅ Прямые вызовы Process API
-- ✅ WMI для извлечения командной строки
-- ✅ MessageBox логирование
-- ✅ App.config настройки
-- ✅ Standalone работа
-
-### Сохранено
-- ✅ Логика категоризации процессов
-- ✅ Алгоритмы завершения
-- ✅ Извлечение аккаунта из user-data-dir
-- ✅ Генерация OTP (без изменений)
-
-## Лицензия
-
-MIT License - см. файл [LICENSE](LICENSE)
-
-## Участие в разработке
-
-Pull requests приветствуются! Для крупных изменений сначала откройте issue.
-
-## Поддержка
-
-Вопросы и проблемы:
-- GitHub Issues: [Issues](https://github.com/yourusername/OtpTrayApp/issues)
-- Email: your@email.com
 
 ---
 
-**Сделано с ❤️ для автоматизации ZennoPoster**
+
+**Made with ❤️ by w3bgr3p**
