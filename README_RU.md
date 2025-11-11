@@ -3,7 +3,7 @@
 > Tray хелпер для генерации OTP кодов и управления процессами ZennoPoster
 
 
-[English version](README_EN.md)
+[English version](README.md)
 
 ## Возможности
 
