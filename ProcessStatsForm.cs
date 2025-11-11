@@ -228,7 +228,6 @@ namespace OtpTrayApp
             txtStats.AppendText(text);
             txtStats.SelectionColor = txtStats.ForeColor;
         }
-
         private void BtnKill_Click(object? sender, EventArgs e)
         {
             var result = MessageBox.Show(
