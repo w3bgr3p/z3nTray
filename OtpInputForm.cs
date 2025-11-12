@@ -23,11 +23,13 @@ namespace OtpTrayApp
             // Настройка формы
             this.Text = "OTP tool";
             this.Size = new Size(400, 180);
-            this.StartPosition = FormStartPosition.Manual; // Изменено с CenterScreen
+            this.StartPosition = FormStartPosition.Manual;
             this.FormBorderStyle = FormBorderStyle.FixedDialog;
             this.MaximizeBox = false;
             this.MinimizeBox = false;
-            this.TopMost = true; // Форма поверх других окон
+            this.TopMost = true;
+            this.BackColor = Color.FromArgb(30, 30, 30);
+            this.ForeColor = Color.White;
 
             // Метка с инструкцией
             lblInstruction = new Label
@@ -35,7 +37,8 @@ namespace OtpTrayApp
                 Text = "input SECRET:",
                 Location = new Point(20, 20),
                 Size = new Size(350, 20),
-                Font = new Font("Iosevka", 10)
+                Font = new Font("Consolas", 10),
+                ForeColor = Color.White
             };
 
             // Поле ввода
@@ -43,7 +46,10 @@ namespace OtpTrayApp
             {
                 Location = new Point(20, 50),
                 Size = new Size(340, 25),
-                Font = new Font("Iosevka", 10)
+                Font = new Font("Consolas", 10),
+                BackColor = Color.FromArgb(20, 20, 20),
+                ForeColor = Color.LightGray,
+                BorderStyle = BorderStyle.FixedSingle
             };
 
             // Кнопка генерации
@@ -53,7 +59,10 @@ namespace OtpTrayApp
                 Location = new Point(180, 95),
                 Size = new Size(120, 30),
                 DialogResult = DialogResult.OK,
-                Font = new Font("Iosevka", 10)
+                Font = new Font("Consolas", 10),
+                FlatStyle = FlatStyle.Flat,
+                BackColor = Color.FromArgb(0, 122, 204),
+                ForeColor = Color.White
             };
             btnGenerate.Click += BtnGenerate_Click;
 
@@ -64,7 +73,10 @@ namespace OtpTrayApp
                 Location = new Point(310, 95),
                 Size = new Size(30, 30),
                 DialogResult = DialogResult.Cancel,
-                Font = new Font("Iosevka", 10)
+                Font = new Font("Consolas", 10),
+                FlatStyle = FlatStyle.Flat,
+                BackColor = Color.FromArgb(60, 60, 60),
+                ForeColor = Color.White
             };
 
             // Добавляем контролы на форму

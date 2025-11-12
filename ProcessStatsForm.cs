@@ -9,6 +9,7 @@ namespace OtpTrayApp
         private RichTextBox txtStats;
         private Button btnRefresh;
         private Button btnKill;
+        private Button btnOpenReport;
         private Button btnClose;
         private Label lblStatus;
         private GroupBox grpInfo;
@@ -101,7 +102,7 @@ namespace OtpTrayApp
             btnRefresh = new Button
             {
                 Text = "Refresh",
-                Location = new Point(520, 510),
+                Location = new Point(430, 510),
                 Size = new Size(80, 30),
                 FlatStyle = FlatStyle.Flat,
                 BackColor = Color.FromArgb(0, 122, 204),
@@ -115,7 +116,7 @@ namespace OtpTrayApp
             btnKill = new Button
             {
                 Text = "Kill",
-                Location = new Point(610, 510),
+                Location = new Point(520, 510),
                 Size = new Size(80, 30),
                 FlatStyle = FlatStyle.Flat,
                 BackColor = Color.FromArgb(200, 50, 50),
@@ -125,6 +126,20 @@ namespace OtpTrayApp
             };
             btnKill.Click += BtnKill_Click;
             this.Controls.Add(btnKill);
+
+            btnOpenReport = new Button
+            {
+                Text = "Report",
+                Location = new Point(610, 510),
+                Size = new Size(80, 30),
+                FlatStyle = FlatStyle.Flat,
+                BackColor = Color.FromArgb(100, 150, 100),
+                ForeColor = Color.White,
+                AutoSize = false,
+                Anchor = AnchorStyles.Bottom | AnchorStyles.Right
+            };
+            btnOpenReport.Click += BtnOpenReport_Click;
+            this.Controls.Add(btnOpenReport);
 
             btnClose = new Button
             {
@@ -285,6 +300,41 @@ namespace OtpTrayApp
                 AppendLog($"\n❌ Ошибка киллера: {ex.Message}\n", Color.Red);
                 lblStatus.Text = "Ошибка выполнения";
                 lblStatus.ForeColor = Color.Red;
+            }
+        }
+
+        private void BtnOpenReport_Click(object? sender, EventArgs e)
+        {
+            try
+            {
+                var reportPath = ResourceMonitor.GetLastReportPathStatic();
+
+                if (string.IsNullOrEmpty(reportPath))
+                {
+                    MessageBox.Show(
+                        "Отчет не найден.\n\nУбедитесь, что мониторинг ресурсов включен в настройках.",
+                        "Отчет не найден",
+                        MessageBoxButtons.OK,
+                        MessageBoxIcon.Information
+                    );
+                    return;
+                }
+
+                // Open report in default browser
+                System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
+                {
+                    FileName = reportPath,
+                    UseShellExecute = true
+                });
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(
+                    $"Ошибка открытия отчета: {ex.Message}",
+                    "Ошибка",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Error
+                );
             }
         }
     }
