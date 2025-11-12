@@ -343,9 +343,58 @@ namespace OtpTrayApp
             html.AppendLine("        .event { padding: 5px; margin: 2px 0; border-left: 3px solid #4ec9b0; background: #2d2d30; }");
             html.AppendLine("        .event.stopped { border-left-color: #f48771; }");
             html.AppendLine("        .pid-info { color: #4ec9b0; cursor: help; text-decoration: underline dotted; }");
-            html.AppendLine("        .cmd-short { color: #ce9178; font-family: monospace; font-size: 0.9em; }");
+            html.AppendLine("        .cmd-short { ");
+            html.AppendLine("            color: #ce9178; ");
+            html.AppendLine("            font-family: monospace; ");
+            html.AppendLine("            font-size: 0.9em; ");
+            html.AppendLine("            word-break: break-all; ");
+            html.AppendLine("            overflow-wrap: break-word; ");
+            html.AppendLine("            cursor: pointer; ");
+            html.AppendLine("            display: inline-block; ");
+            html.AppendLine("            padding: 2px 4px; ");
+            html.AppendLine("            border-radius: 3px; ");
+            html.AppendLine("            transition: background-color 0.2s; ");
+            html.AppendLine("        }");
+            html.AppendLine("        .cmd-short:hover { background-color: #3e3e42; }");
+            html.AppendLine("        .cmd-short:active { background-color: #4ec9b0; color: #000; }");
+            html.AppendLine("        .copy-feedback { ");
+            html.AppendLine("            position: fixed; ");
+            html.AppendLine("            top: 20px; ");
+            html.AppendLine("            right: 20px; ");
+            html.AppendLine("            background: #4ec9b0; ");
+            html.AppendLine("            color: #000; ");
+            html.AppendLine("            padding: 10px 20px; ");
+            html.AppendLine("            border-radius: 5px; ");
+            html.AppendLine("            font-weight: bold; ");
+            html.AppendLine("            z-index: 1000; ");
+            html.AppendLine("            animation: fadeInOut 2s ease-in-out; ");
+            html.AppendLine("        }");
+            html.AppendLine("        @keyframes fadeInOut { ");
+            html.AppendLine("            0% { opacity: 0; transform: translateY(-10px); } ");
+            html.AppendLine("            10% { opacity: 1; transform: translateY(0); } ");
+            html.AppendLine("            90% { opacity: 1; transform: translateY(0); } ");
+            html.AppendLine("            100% { opacity: 0; transform: translateY(-10px); } ");
+            html.AppendLine("        }");
             html.AppendLine("        canvas { max-height: 400px; }");
             html.AppendLine("    </style>");
+            html.AppendLine("    <script>");
+            html.AppendLine("        function copyToClipboard(text) {");
+            html.AppendLine("            navigator.clipboard.writeText(text).then(function() {");
+            html.AppendLine("                showCopyFeedback();");
+            html.AppendLine("            }).catch(function(err) {");
+            html.AppendLine("                console.error('Failed to copy: ', err);");
+            html.AppendLine("            });");
+            html.AppendLine("        }");
+            html.AppendLine("        function showCopyFeedback() {");
+            html.AppendLine("            var feedback = document.createElement('div');");
+            html.AppendLine("            feedback.className = 'copy-feedback';");
+            html.AppendLine("            feedback.textContent = 'Copied to clipboard!';");
+            html.AppendLine("            document.body.appendChild(feedback);");
+            html.AppendLine("            setTimeout(function() {");
+            html.AppendLine("                document.body.removeChild(feedback);");
+            html.AppendLine("            }, 2000);");
+            html.AppendLine("        }");
+            html.AppendLine("    </script>");
             html.AppendLine("</head>");
             html.AppendLine("<body>");
 
@@ -564,6 +613,7 @@ namespace OtpTrayApp
                 var cssClass = evt.EventType == "stopped" ? "event stopped" : "event";
                 var icon = evt.EventType == "started" ? "▶" : "■";
                 var cmdLineEscaped = System.Security.SecurityElement.Escape(evt.CommandLine ?? "");
+                var cmdLineForJs = EscapeJavaScript(evt.CommandLine ?? "");
 
                 html.AppendLine($"        <div class='{cssClass}'>");
                 html.AppendLine($"            <strong>{evt.Timestamp:HH:mm:ss}</strong> {icon} ");
@@ -583,18 +633,10 @@ namespace OtpTrayApp
                     html.AppendLine($"            - Account: {evt.Account}");
                 }
 
-                // Show command line: short version if too long, full if short
+                // Show command line with word-wrap and click-to-copy
                 if (!string.IsNullOrEmpty(evt.CommandLine))
                 {
-                    if (evt.CommandLine.Length < 150)
-                    {
-                        html.AppendLine($"            <br><span class='cmd-short'>{cmdLineEscaped}</span>");
-                    }
-                    else
-                    {
-                        var shortCmd = System.Security.SecurityElement.Escape(evt.CommandLine.Substring(0, 147) + "...");
-                        html.AppendLine($"            <br><span class='cmd-short' title='{cmdLineEscaped}'>{shortCmd}</span>");
-                    }
+                    html.AppendLine($"            <br><span class='cmd-short' onclick='copyToClipboard(\"{cmdLineForJs}\")' title='Click to copy to clipboard'>{cmdLineEscaped}</span>");
                 }
 
                 html.AppendLine("        </div>");
