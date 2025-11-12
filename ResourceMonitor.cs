@@ -63,9 +63,9 @@ namespace OtpTrayApp
         public ResourceMonitor()
         {
             // Create reports directory next to executable
-            var exePath = System.Reflection.Assembly.GetExecutingAssembly().Location;
-            var exeDir = Path.GetDirectoryName(exePath);
+            var exeDir = AppContext.BaseDirectory;  
             reportsDirectory = Path.Combine(exeDir, "reports");
+      
 
             if (!Directory.Exists(reportsDirectory))
             {
@@ -483,19 +483,45 @@ namespace OtpTrayApp
             html.AppendLine("            },");
             html.AppendLine("            options: {");
             html.AppendLine("                responsive: true,");
+            html.AppendLine("                onClick: function(event, elements) {");
+            html.AppendLine("                    if (elements.length > 0) {");
+            html.AppendLine("                        var datasetIndex = elements[0].datasetIndex;");
+            html.AppendLine("                        var dataset = event.chart.data.datasets[datasetIndex];");
+            html.AppendLine("                        if (dataset.commandLine) {");
+            html.AppendLine("                            copyToClipboard(dataset.commandLine);");
+            html.AppendLine("                        }");
+            html.AppendLine("                    }");
+            html.AppendLine("                },");
             html.AppendLine("                plugins: {");
-            html.AppendLine("                    legend: { labels: { color: '#fff' } },");
+            html.AppendLine("                    legend: { ");
+            html.AppendLine("                        labels: { ");
+            html.AppendLine("                            color: '#fff',");
+            html.AppendLine("                            boxWidth: 12,");
+            html.AppendLine("                            boxHeight: 12,");
+            html.AppendLine("                            padding: 15,");
+            html.AppendLine("                            usePointStyle: false");
+            html.AppendLine("                        }");
+            html.AppendLine("                    },");
             html.AppendLine("                    tooltip: {");
             html.AppendLine("                        backgroundColor: 'rgba(0, 0, 0, 0.9)',");
             html.AppendLine("                        titleColor: '#4ec9b0',");
             html.AppendLine("                        bodyColor: '#fff',");
             html.AppendLine("                        padding: 12,");
             html.AppendLine("                        displayColors: true,");
+            html.AppendLine("                        bodyFont: { family: 'monospace', size: 11 },");
             html.AppendLine("                        callbacks: {");
+            html.AppendLine("                            label: function(context) {");
+            html.AppendLine("                                return context.dataset.label + ': ' + context.parsed.y + ' MB';");
+            html.AppendLine("                            },");
             html.AppendLine("                            afterLabel: function(context) {");
             html.AppendLine("                                var cmdLine = context.dataset.commandLine;");
             html.AppendLine("                                if (cmdLine && cmdLine !== 'N/A') {");
-            html.AppendLine("                                    return '\\nCommand Line:\\n' + cmdLine;");
+            html.AppendLine("                                    var maxLen = 200;");
+            html.AppendLine("                                    var lines = [];");
+            html.AppendLine("                                    for (var i = 0; i < cmdLine.length; i += maxLen) {");
+            html.AppendLine("                                        lines.push(cmdLine.substring(i, i + maxLen));");
+            html.AppendLine("                                    }");
+            html.AppendLine("                                    return '\\nCommand:\\n' + lines.join('\\n') + '\\n\\n[Click to copy]';");
             html.AppendLine("                                }");
             html.AppendLine("                                return '';");
             html.AppendLine("                            }");
@@ -512,7 +538,7 @@ namespace OtpTrayApp
         }
 
         /// <summary>
-        /// Generate zbe1 charts grouped by account
+        /// Generate zbe1 chart (all processes on one graph)
         /// </summary>
         private void GenerateZbe1Charts(StringBuilder html, MonitoringSession session)
         {
@@ -523,81 +549,101 @@ namespace OtpTrayApp
 
             if (zbe1Snapshots.Count == 0) return;
 
-            // Group by account
-            var byAccount = zbe1Snapshots.GroupBy(s => s.Account ?? "unknown").ToList();
+            html.AppendLine("    <div class='chart-container'>");
+            html.AppendLine("        <h2>zbe1 Memory Usage (All Processes)</h2>");
+            html.AppendLine("        <canvas id='zbe1Chart'></canvas>");
+            html.AppendLine("    </div>");
 
-            foreach (var accountGroup in byAccount)
+            html.AppendLine("    <script>");
+            html.AppendLine("        var zbe1Ctx = document.getElementById('zbe1Chart').getContext('2d');");
+            html.AppendLine("        new Chart(zbe1Ctx, {");
+            html.AppendLine("            type: 'line',");
+            html.AppendLine("            data: {");
+
+            var timestamps = zbe1Snapshots.Select(s => s.Timestamp).Distinct().OrderBy(t => t).ToList();
+            html.AppendLine($"                labels: [{string.Join(",", timestamps.Select(t => $"'{t:HH:mm}'"))}],");
+
+            html.AppendLine("                datasets: [");
+
+            // Group all zbe1 by PID (regardless of account)
+            var byPid = zbe1Snapshots.GroupBy(s => s.Pid).ToList();
+            int colorIndex = 0;
+            foreach (var pidGroup in byPid)
             {
-                var account = accountGroup.Key;
-                var chartId = $"zbe1Chart_{account.Replace(" ", "_").Replace("\"", "")}";
+                var pid = pidGroup.Key;
+                var color = GetChartColor(colorIndex++);
+                var cmdLine = pidGroup.FirstOrDefault()?.CommandLine ?? "N/A";
+                var account = pidGroup.FirstOrDefault()?.Account ?? "unknown";
+                var cmdLineEscaped = EscapeJavaScript(cmdLine);
 
-                html.AppendLine("    <div class='chart-container'>");
-                html.AppendLine($"        <h2>zbe1 Memory Usage - Account: {account}</h2>");
-                html.AppendLine($"        <canvas id='{chartId}'></canvas>");
-                html.AppendLine("    </div>");
+                var label = account != "unknown" ? $"PID:{pid} ({account})" : $"PID:{pid}";
 
-                html.AppendLine("    <script>");
-                html.AppendLine($"        var ctx_{account.Replace(" ", "_").Replace("\"", "")} = document.getElementById('{chartId}').getContext('2d');");
-                html.AppendLine($"        new Chart(ctx_{account.Replace(" ", "_").Replace("\"", "")}, {{");
-                html.AppendLine("            type: 'line',");
-                html.AppendLine("            data: {");
-
-                var timestamps = accountGroup.Select(s => s.Timestamp).Distinct().OrderBy(t => t).ToList();
-                html.AppendLine($"                labels: [{string.Join(",", timestamps.Select(t => $"'{t:HH:mm}'"))}],");
-
-                html.AppendLine("                datasets: [");
-
-                // Group by PID within account
-                var byPid = accountGroup.GroupBy(s => s.Pid).ToList();
-                int colorIndex = 0;
-                foreach (var pidGroup in byPid)
-                {
-                    var pid = pidGroup.Key;
-                    var color = GetChartColor(colorIndex++);
-                    var cmdLine = pidGroup.FirstOrDefault()?.CommandLine ?? "N/A";
-                    var cmdLineEscaped = EscapeJavaScript(cmdLine);
-
-                    html.AppendLine("                    {");
-                    html.AppendLine($"                        label: 'PID:{pid}',");
-                    html.AppendLine($"                        data: [{string.Join(",", timestamps.Select(t => pidGroup.FirstOrDefault(s => s.Timestamp == t)?.MemoryMB ?? 0))}],");
-                    html.AppendLine($"                        borderColor: '{color}',");
-                    html.AppendLine($"                        backgroundColor: '{color}33',");
-                    html.AppendLine("                        tension: 0.1,");
-                    html.AppendLine($"                        commandLine: '{cmdLineEscaped}'");
-                    html.AppendLine("                    },");
-                }
-
-                html.AppendLine("                ]");
-                html.AppendLine("            },");
-                html.AppendLine("            options: {");
-                html.AppendLine("                responsive: true,");
-                html.AppendLine("                plugins: {");
-                html.AppendLine("                    legend: { labels: { color: '#fff' } },");
-                html.AppendLine("                    tooltip: {");
-                html.AppendLine("                        backgroundColor: 'rgba(0, 0, 0, 0.9)',");
-                html.AppendLine("                        titleColor: '#4ec9b0',");
-                html.AppendLine("                        bodyColor: '#fff',");
-                html.AppendLine("                        padding: 12,");
-                html.AppendLine("                        displayColors: true,");
-                html.AppendLine("                        callbacks: {");
-                html.AppendLine("                            afterLabel: function(context) {");
-                html.AppendLine("                                var cmdLine = context.dataset.commandLine;");
-                html.AppendLine("                                if (cmdLine && cmdLine !== 'N/A') {");
-                html.AppendLine("                                    return '\\nCommand Line:\\n' + cmdLine;");
-                html.AppendLine("                                }");
-                html.AppendLine("                                return '';");
-                html.AppendLine("                            }");
-                html.AppendLine("                        }");
-                html.AppendLine("                    }");
-                html.AppendLine("                },");
-                html.AppendLine("                scales: {");
-                html.AppendLine("                    y: { beginAtZero: true, title: { display: true, text: 'Memory (MB)', color: '#fff' }, ticks: { color: '#fff' } },");
-                html.AppendLine("                    x: { ticks: { color: '#fff' } }");
-                html.AppendLine("                }");
-                html.AppendLine("            }");
-                html.AppendLine("        });");
-                html.AppendLine("    </script>");
+                html.AppendLine("                    {");
+                html.AppendLine($"                        label: '{label}',");
+                html.AppendLine($"                        data: [{string.Join(",", timestamps.Select(t => pidGroup.FirstOrDefault(s => s.Timestamp == t)?.MemoryMB ?? 0))}],");
+                html.AppendLine($"                        borderColor: '{color}',");
+                html.AppendLine($"                        backgroundColor: '{color}33',");
+                html.AppendLine("                        tension: 0.1,");
+                html.AppendLine($"                        commandLine: '{cmdLineEscaped}'");
+                html.AppendLine("                    },");
             }
+
+            html.AppendLine("                ]");
+            html.AppendLine("            },");
+            html.AppendLine("            options: {");
+            html.AppendLine("                responsive: true,");
+            html.AppendLine("                onClick: function(event, elements) {");
+            html.AppendLine("                    if (elements.length > 0) {");
+            html.AppendLine("                        var datasetIndex = elements[0].datasetIndex;");
+            html.AppendLine("                        var dataset = event.chart.data.datasets[datasetIndex];");
+            html.AppendLine("                        if (dataset.commandLine) {");
+            html.AppendLine("                            copyToClipboard(dataset.commandLine);");
+            html.AppendLine("                        }");
+            html.AppendLine("                    }");
+            html.AppendLine("                },");
+            html.AppendLine("                plugins: {");
+            html.AppendLine("                    legend: { ");
+            html.AppendLine("                        labels: { ");
+            html.AppendLine("                            color: '#fff',");
+            html.AppendLine("                            boxWidth: 12,");
+            html.AppendLine("                            boxHeight: 12,");
+            html.AppendLine("                            padding: 15,");
+            html.AppendLine("                            usePointStyle: false");
+            html.AppendLine("                        }");
+            html.AppendLine("                    },");
+            html.AppendLine("                    tooltip: {");
+            html.AppendLine("                        backgroundColor: 'rgba(0, 0, 0, 0.9)',");
+            html.AppendLine("                        titleColor: '#4ec9b0',");
+            html.AppendLine("                        bodyColor: '#fff',");
+            html.AppendLine("                        padding: 12,");
+            html.AppendLine("                        displayColors: true,");
+            html.AppendLine("                        bodyFont: { family: 'monospace', size: 11 },");
+            html.AppendLine("                        callbacks: {");
+            html.AppendLine("                            label: function(context) {");
+            html.AppendLine("                                return context.dataset.label + ': ' + context.parsed.y + ' MB';");
+            html.AppendLine("                            },");
+            html.AppendLine("                            afterLabel: function(context) {");
+            html.AppendLine("                                var cmdLine = context.dataset.commandLine;");
+            html.AppendLine("                                if (cmdLine && cmdLine !== 'N/A') {");
+            html.AppendLine("                                    var maxLen = 200;");
+            html.AppendLine("                                    var lines = [];");
+            html.AppendLine("                                    for (var i = 0; i < cmdLine.length; i += maxLen) {");
+            html.AppendLine("                                        lines.push(cmdLine.substring(i, i + maxLen));");
+            html.AppendLine("                                    }");
+            html.AppendLine("                                    return '\\nCommand:\\n' + lines.join('\\n') + '\\n\\n[Click to copy]';");
+            html.AppendLine("                                }");
+            html.AppendLine("                                return '';");
+            html.AppendLine("                            }");
+            html.AppendLine("                        }");
+            html.AppendLine("                    }");
+            html.AppendLine("                },");
+            html.AppendLine("                scales: {");
+            html.AppendLine("                    y: { beginAtZero: true, title: { display: true, text: 'Memory (MB)', color: '#fff' }, ticks: { color: '#fff' } },");
+            html.AppendLine("                    x: { ticks: { color: '#fff' } }");
+            html.AppendLine("                }");
+            html.AppendLine("            }");
+            html.AppendLine("        });");
+            html.AppendLine("    </script>");
         }
 
         /// <summary>
@@ -618,10 +664,10 @@ namespace OtpTrayApp
                 html.AppendLine($"        <div class='{cssClass}'>");
                 html.AppendLine($"            <strong>{evt.Timestamp:HH:mm:ss}</strong> {icon} ");
 
-                // PID with tooltip showing full command line
+                // PID with tooltip and click-to-copy
                 if (!string.IsNullOrEmpty(evt.CommandLine))
                 {
-                    html.AppendLine($"            {evt.ProcessName} <span class='pid-info' title='{cmdLineEscaped}'>PID:{evt.Pid}</span> {evt.EventType}");
+                    html.AppendLine($"            {evt.ProcessName} <span class='pid-info' onclick='copyToClipboard(\"{cmdLineForJs}\")' title='Click to copy command line'>PID:{evt.Pid}</span> {evt.EventType}");
                 }
                 else
                 {
@@ -702,8 +748,7 @@ namespace OtpTrayApp
         {
             try
             {
-                var exePath = System.Reflection.Assembly.GetExecutingAssembly().Location;
-                var exeDir = Path.GetDirectoryName(exePath);
+                var exeDir = AppContext.BaseDirectory;  
                 var reportsDirectory = Path.Combine(exeDir, "reports");
 
                 if (!Directory.Exists(reportsDirectory))
