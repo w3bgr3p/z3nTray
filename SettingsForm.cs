@@ -31,12 +31,12 @@ namespace OtpTrayApp
         private void InitializeComponents()
         {
             this.Text = "Настройки менеджера процессов";
-            this.Size = new Size(800, 800);
-            this.FormBorderStyle = FormBorderStyle.FixedDialog;
+            this.Size = new Size(450, 550);
+            this.FormBorderStyle = FormBorderStyle.Sizable;
             this.MaximizeBox = false;
-            this.MinimizeBox = false;
+            this.MinimizeBox = true;
             this.StartPosition = FormStartPosition.CenterScreen;
-            this.BackColor = Color.FromArgb(45, 45, 48);
+            this.BackColor = Color.FromArgb(30, 30, 30);
             this.ForeColor = Color.White;
 
             int yPos = 20;
@@ -49,8 +49,9 @@ namespace OtpTrayApp
             {
                 Text = "Процессы браузера (zbe1)",
                 Location = new Point(10, yPos),
-                Size = new Size(390, 90),
-                ForeColor = Color.White
+                Size = new Size(410, 90),
+                ForeColor = Color.White,
+                Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right
             };
             this.Controls.Add(grpBrowser);
             yPos = 25;
@@ -72,8 +73,9 @@ namespace OtpTrayApp
             {
                 Text = "Главный процесс (ZennoPoster)",
                 Location = new Point(10, yPos),
-                Size = new Size(390, 60),
-                ForeColor = Color.White
+                Size = new Size(410, 60),
+                ForeColor = Color.White,
+                Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right
             };
             this.Controls.Add(grpMain);
             yPos = 25;
@@ -89,8 +91,9 @@ namespace OtpTrayApp
             {
                 Text = "Параметры завершения",
                 Location = new Point(10, yPos),
-                Size = new Size(390, 110),
-                ForeColor = Color.White
+                Size = new Size(410, 110),
+                ForeColor = Color.White,
+                Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right
             };
             this.Controls.Add(grpKill);
             yPos = 25;
@@ -125,17 +128,18 @@ namespace OtpTrayApp
 
             chkEnableResourceMonitoring = CreateCheckBox("Включить мониторинг ресурсов (для отладки утечек памяти)", 20, yPos);
             this.Controls.Add(chkEnableResourceMonitoring);
-            yPos += 35;
+            yPos += 50;
 
             // Buttons
             btnSave = new Button
             {
                 Text = "Сохранить",
-                Location = new Point(210, yPos),
+                Location = new Point(230, yPos),
                 Size = new Size(90, 30),
                 FlatStyle = FlatStyle.Flat,
                 BackColor = Color.FromArgb(0, 122, 204),
-                ForeColor = Color.White
+                ForeColor = Color.White,
+                Anchor = AnchorStyles.Bottom | AnchorStyles.Right
             };
             btnSave.Click += BtnSave_Click;
             this.Controls.Add(btnSave);
@@ -143,11 +147,12 @@ namespace OtpTrayApp
             btnCancel = new Button
             {
                 Text = "Отмена",
-                Location = new Point(310, yPos),
+                Location = new Point(330, yPos),
                 Size = new Size(90, 30),
                 FlatStyle = FlatStyle.Flat,
                 BackColor = Color.FromArgb(60, 60, 60),
-                ForeColor = Color.White
+                ForeColor = Color.White,
+                Anchor = AnchorStyles.Bottom | AnchorStyles.Right
             };
             btnCancel.Click += (s, e) => this.DialogResult = DialogResult.Cancel;
             this.Controls.Add(btnCancel);
