@@ -13,6 +13,7 @@ namespace OtpTrayApp
         private ProcessStatsForm? statsForm;
         private AppSettings settings;
         private System.Windows.Forms.Timer? autoCheckTimer;
+        private ResourceMonitor? resourceMonitor;
 
         public OtpTrayContext()
         {
@@ -27,10 +28,16 @@ namespace OtpTrayApp
             };
 
             trayIcon.MouseClick += TrayIcon_Click;
-            
+
             if (settings.AutoCheckInterval > 0)
             {
                 StartAutoCheck();
+            }
+
+            // Start resource monitoring if enabled
+            if (settings.EnableResourceMonitoring)
+            {
+                StartResourceMonitoring();
             }
         }
 
@@ -146,6 +153,12 @@ namespace OtpTrayApp
             {
                 var result = ProcessManager.KillProcesses(settings);
 
+                // Create checkpoint if ZennoPoster was killed
+                if (result.KilledMain > 0 && resourceMonitor != null)
+                {
+                    resourceMonitor.CreateCheckpoint("ZennoPosterKilled");
+                }
+
                 if (settings.ShowLogs)
                 {
                     var message = string.Join("\n", result.Messages);
@@ -198,6 +211,16 @@ namespace OtpTrayApp
                     StopAutoCheck();
                 }
 
+                // Update resource monitoring
+                if (settings.EnableResourceMonitoring)
+                {
+                    StartResourceMonitoring();
+                }
+                else
+                {
+                    StopResourceMonitoring();
+                }
+
                 trayIcon.ShowBalloonTip(1000, "Настройки сохранены",
                     "Параметры менеджера процессов обновлены",
                     ToolTipIcon.Info);
@@ -230,7 +253,29 @@ namespace OtpTrayApp
 
         #endregion
 
-        
+        #region Resource Monitoring
+
+        private void StartResourceMonitoring()
+        {
+            StopResourceMonitoring(); // Stop existing monitor if any
+
+            resourceMonitor = new ResourceMonitor();
+            resourceMonitor.Start();
+        }
+
+        private void StopResourceMonitoring()
+        {
+            if (resourceMonitor != null)
+            {
+                resourceMonitor.Stop();
+                resourceMonitor.Dispose();
+                resourceMonitor = null;
+            }
+        }
+
+        #endregion
+
+
         #region UI
         private void PositionFormNearTray(Form form)
         {
@@ -256,6 +301,9 @@ namespace OtpTrayApp
         }
         private void Exit_Click(object? sender, EventArgs e)
         {
+            // Stop resource monitoring before exit
+            StopResourceMonitoring();
+
             trayIcon.Visible = false;
             Application.Exit();
         }

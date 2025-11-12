@@ -24,6 +24,9 @@ namespace OtpTrayApp
         public bool ShowLogs { get; set; }
         public bool ShowRawCommandLine { get; set; }
 
+        // Resource monitoring
+        public bool EnableResourceMonitoring { get; set; }
+
         // Default values
         public AppSettings()
         {
@@ -36,6 +39,7 @@ namespace OtpTrayApp
             AutoCheckInterval = 0;
             ShowLogs = false;
             ShowRawCommandLine = false;
+            EnableResourceMonitoring = false;
         }
 
         // Load from app.config
@@ -54,6 +58,7 @@ namespace OtpTrayApp
                 settings.AutoCheckInterval = GetInt("AutoCheckInterval", 0);
                 settings.ShowLogs = GetBool("ShowLogs", false);
                 settings.ShowRawCommandLine = GetBool("ShowRawCommandLine", false);
+                settings.EnableResourceMonitoring = GetBool("EnableResourceMonitoring", false);
             }
             catch (Exception ex)
             {
@@ -83,7 +88,8 @@ namespace OtpTrayApp
                 SetValue(config, "AutoCheckInterval", AutoCheckInterval.ToString());
                 SetValue(config, "ShowLogs", ShowLogs.ToString());
                 SetValue(config, "ShowRawCommandLine", ShowRawCommandLine.ToString());
-                
+                SetValue(config, "EnableResourceMonitoring", EnableResourceMonitoring.ToString());
+
                 config.Save(ConfigurationSaveMode.Modified);
                 ConfigurationManager.RefreshSection("appSettings");
             }
@@ -129,7 +135,8 @@ namespace OtpTrayApp
                 KillMain = this.KillMain,
                 AutoCheckInterval = this.AutoCheckInterval,
                 ShowLogs = this.ShowLogs,
-                ShowRawCommandLine = this.ShowRawCommandLine
+                ShowRawCommandLine = this.ShowRawCommandLine,
+                EnableResourceMonitoring = this.EnableResourceMonitoring
             };
         }
     }

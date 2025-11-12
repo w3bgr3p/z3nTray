@@ -15,6 +15,7 @@ namespace OtpTrayApp
         private CheckBox chkKillMain;
         private CheckBox chkShowLogs;
         private CheckBox chkShowRawCommandLine;
+        private CheckBox chkEnableResourceMonitoring;
         private Button btnSave;
         private Button btnCancel;
 
@@ -120,6 +121,10 @@ namespace OtpTrayApp
 
             chkShowRawCommandLine = CreateCheckBox("Показывать полную командную строку (сырую)", 20, yPos);
             this.Controls.Add(chkShowRawCommandLine);
+            yPos += 30;
+
+            chkEnableResourceMonitoring = CreateCheckBox("Включить мониторинг ресурсов (для отладки утечек памяти)", 20, yPos);
+            this.Controls.Add(chkEnableResourceMonitoring);
             yPos += 35;
 
             // Buttons
@@ -193,6 +198,7 @@ namespace OtpTrayApp
             chkKillMain.Checked = Settings.KillMain;
             chkShowLogs.Checked = Settings.ShowLogs;
             chkShowRawCommandLine.Checked = Settings.ShowRawCommandLine;
+            chkEnableResourceMonitoring.Checked = Settings.EnableResourceMonitoring;
         }
 
         private void BtnSave_Click(object? sender, EventArgs e)
@@ -206,6 +212,7 @@ namespace OtpTrayApp
             Settings.KillMain = chkKillMain.Checked;
             Settings.ShowLogs = chkShowLogs.Checked;
             Settings.ShowRawCommandLine = chkShowRawCommandLine.Checked;
+            Settings.EnableResourceMonitoring = chkEnableResourceMonitoring.Checked;
 
             try
             {
