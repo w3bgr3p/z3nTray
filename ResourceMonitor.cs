@@ -342,6 +342,8 @@ namespace OtpTrayApp
             html.AppendLine("        .info { background: #252526; padding: 15px; border-radius: 5px; margin: 20px 0; }");
             html.AppendLine("        .event { padding: 5px; margin: 2px 0; border-left: 3px solid #4ec9b0; background: #2d2d30; }");
             html.AppendLine("        .event.stopped { border-left-color: #f48771; }");
+            html.AppendLine("        .pid-info { color: #4ec9b0; cursor: help; text-decoration: underline dotted; }");
+            html.AppendLine("        .cmd-short { color: #ce9178; font-family: monospace; font-size: 0.9em; }");
             html.AppendLine("        canvas { max-height: 400px; }");
             html.AppendLine("    </style>");
             html.AppendLine("</head>");
@@ -415,13 +417,16 @@ namespace OtpTrayApp
             {
                 var pid = group.Key;
                 var color = GetChartColor(colorIndex++);
+                var cmdLine = group.FirstOrDefault()?.CommandLine ?? "N/A";
+                var cmdLineEscaped = EscapeJavaScript(cmdLine);
 
                 html.AppendLine("                    {");
                 html.AppendLine($"                        label: 'ZennoPoster PID:{pid}',");
                 html.AppendLine($"                        data: [{string.Join(",", timestamps.Select(t => group.FirstOrDefault(s => s.Timestamp == t)?.MemoryMB ?? 0))}],");
                 html.AppendLine($"                        borderColor: '{color}',");
                 html.AppendLine($"                        backgroundColor: '{color}33',");
-                html.AppendLine("                        tension: 0.1");
+                html.AppendLine("                        tension: 0.1,");
+                html.AppendLine($"                        commandLine: '{cmdLineEscaped}'");
                 html.AppendLine("                    },");
             }
 
@@ -429,7 +434,25 @@ namespace OtpTrayApp
             html.AppendLine("            },");
             html.AppendLine("            options: {");
             html.AppendLine("                responsive: true,");
-            html.AppendLine("                plugins: { legend: { labels: { color: '#fff' } } },");
+            html.AppendLine("                plugins: {");
+            html.AppendLine("                    legend: { labels: { color: '#fff' } },");
+            html.AppendLine("                    tooltip: {");
+            html.AppendLine("                        backgroundColor: 'rgba(0, 0, 0, 0.9)',");
+            html.AppendLine("                        titleColor: '#4ec9b0',");
+            html.AppendLine("                        bodyColor: '#fff',");
+            html.AppendLine("                        padding: 12,");
+            html.AppendLine("                        displayColors: true,");
+            html.AppendLine("                        callbacks: {");
+            html.AppendLine("                            afterLabel: function(context) {");
+            html.AppendLine("                                var cmdLine = context.dataset.commandLine;");
+            html.AppendLine("                                if (cmdLine && cmdLine !== 'N/A') {");
+            html.AppendLine("                                    return '\\nCommand Line:\\n' + cmdLine;");
+            html.AppendLine("                                }");
+            html.AppendLine("                                return '';");
+            html.AppendLine("                            }");
+            html.AppendLine("                        }");
+            html.AppendLine("                    }");
+            html.AppendLine("                },");
             html.AppendLine("                scales: {");
             html.AppendLine("                    y: { beginAtZero: true, title: { display: true, text: 'Memory (MB)', color: '#fff' }, ticks: { color: '#fff' } },");
             html.AppendLine("                    x: { ticks: { color: '#fff' } }");
@@ -482,13 +505,16 @@ namespace OtpTrayApp
                 {
                     var pid = pidGroup.Key;
                     var color = GetChartColor(colorIndex++);
+                    var cmdLine = pidGroup.FirstOrDefault()?.CommandLine ?? "N/A";
+                    var cmdLineEscaped = EscapeJavaScript(cmdLine);
 
                     html.AppendLine("                    {");
                     html.AppendLine($"                        label: 'PID:{pid}',");
                     html.AppendLine($"                        data: [{string.Join(",", timestamps.Select(t => pidGroup.FirstOrDefault(s => s.Timestamp == t)?.MemoryMB ?? 0))}],");
                     html.AppendLine($"                        borderColor: '{color}',");
                     html.AppendLine($"                        backgroundColor: '{color}33',");
-                    html.AppendLine("                        tension: 0.1");
+                    html.AppendLine("                        tension: 0.1,");
+                    html.AppendLine($"                        commandLine: '{cmdLineEscaped}'");
                     html.AppendLine("                    },");
                 }
 
@@ -496,7 +522,25 @@ namespace OtpTrayApp
                 html.AppendLine("            },");
                 html.AppendLine("            options: {");
                 html.AppendLine("                responsive: true,");
-                html.AppendLine("                plugins: { legend: { labels: { color: '#fff' } } },");
+                html.AppendLine("                plugins: {");
+                html.AppendLine("                    legend: { labels: { color: '#fff' } },");
+                html.AppendLine("                    tooltip: {");
+                html.AppendLine("                        backgroundColor: 'rgba(0, 0, 0, 0.9)',");
+                html.AppendLine("                        titleColor: '#4ec9b0',");
+                html.AppendLine("                        bodyColor: '#fff',");
+                html.AppendLine("                        padding: 12,");
+                html.AppendLine("                        displayColors: true,");
+                html.AppendLine("                        callbacks: {");
+                html.AppendLine("                            afterLabel: function(context) {");
+                html.AppendLine("                                var cmdLine = context.dataset.commandLine;");
+                html.AppendLine("                                if (cmdLine && cmdLine !== 'N/A') {");
+                html.AppendLine("                                    return '\\nCommand Line:\\n' + cmdLine;");
+                html.AppendLine("                                }");
+                html.AppendLine("                                return '';");
+                html.AppendLine("                            }");
+                html.AppendLine("                        }");
+                html.AppendLine("                    }");
+                html.AppendLine("                },");
                 html.AppendLine("                scales: {");
                 html.AppendLine("                    y: { beginAtZero: true, title: { display: true, text: 'Memory (MB)', color: '#fff' }, ticks: { color: '#fff' } },");
                 html.AppendLine("                    x: { ticks: { color: '#fff' } }");
@@ -519,25 +563,61 @@ namespace OtpTrayApp
             {
                 var cssClass = evt.EventType == "stopped" ? "event stopped" : "event";
                 var icon = evt.EventType == "started" ? "▶" : "■";
+                var cmdLineEscaped = System.Security.SecurityElement.Escape(evt.CommandLine ?? "");
 
                 html.AppendLine($"        <div class='{cssClass}'>");
                 html.AppendLine($"            <strong>{evt.Timestamp:HH:mm:ss}</strong> {icon} ");
-                html.AppendLine($"            {evt.ProcessName} PID:{evt.Pid} {evt.EventType}");
+
+                // PID with tooltip showing full command line
+                if (!string.IsNullOrEmpty(evt.CommandLine))
+                {
+                    html.AppendLine($"            {evt.ProcessName} <span class='pid-info' title='{cmdLineEscaped}'>PID:{evt.Pid}</span> {evt.EventType}");
+                }
+                else
+                {
+                    html.AppendLine($"            {evt.ProcessName} PID:{evt.Pid} {evt.EventType}");
+                }
 
                 if (!string.IsNullOrEmpty(evt.Account) && evt.Account != "unknown")
                 {
                     html.AppendLine($"            - Account: {evt.Account}");
                 }
 
-                if (!string.IsNullOrEmpty(evt.CommandLine) && evt.CommandLine.Length < 200)
+                // Show command line: short version if too long, full if short
+                if (!string.IsNullOrEmpty(evt.CommandLine))
                 {
-                    html.AppendLine($"            <br><small>{System.Security.SecurityElement.Escape(evt.CommandLine)}</small>");
+                    if (evt.CommandLine.Length < 150)
+                    {
+                        html.AppendLine($"            <br><span class='cmd-short'>{cmdLineEscaped}</span>");
+                    }
+                    else
+                    {
+                        var shortCmd = System.Security.SecurityElement.Escape(evt.CommandLine.Substring(0, 147) + "...");
+                        html.AppendLine($"            <br><span class='cmd-short' title='{cmdLineEscaped}'>{shortCmd}</span>");
+                    }
                 }
 
                 html.AppendLine("        </div>");
             }
 
             html.AppendLine("    </div>");
+        }
+
+        /// <summary>
+        /// Escape string for JavaScript
+        /// </summary>
+        private string EscapeJavaScript(string input)
+        {
+            if (string.IsNullOrEmpty(input))
+                return "";
+
+            return input
+                .Replace("\\", "\\\\")
+                .Replace("'", "\\'")
+                .Replace("\"", "\\\"")
+                .Replace("\r", "\\r")
+                .Replace("\n", "\\n")
+                .Replace("\t", "\\t");
         }
 
         /// <summary>
