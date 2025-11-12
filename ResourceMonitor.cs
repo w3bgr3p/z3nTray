@@ -53,7 +53,7 @@ namespace OtpTrayApp
     public class ResourceMonitor : IDisposable
     {
         private readonly object lockObj = new object();
-        private Timer collectionTimer;
+        private System.Threading.Timer collectionTimer;
         private MonitoringSession currentSession;
         private Dictionary<int, ProcessSnapshot> lastSnapshots = new Dictionary<int, ProcessSnapshot>();
         private readonly string reportsDirectory;
@@ -93,7 +93,7 @@ namespace OtpTrayApp
                 CollectMetrics(null);
 
                 // Start timer for 1-minute intervals
-                collectionTimer = new Timer(CollectMetrics, null, TimeSpan.FromMinutes(1), TimeSpan.FromMinutes(1));
+                collectionTimer = new System.Threading.Timer(CollectMetrics, null, TimeSpan.FromMinutes(1), TimeSpan.FromMinutes(1));
                 isRunning = true;
             }
         }
@@ -336,7 +336,7 @@ namespace OtpTrayApp
             html.AppendLine("    <title>Resource Usage Report</title>");
             html.AppendLine("    <script src='https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js'></script>");
             html.AppendLine("    <style>");
-            html.AppendLine("        body { font-family: Arial, sans-serif; margin: 20px; background: #1e1e1e; color: #fff; }");
+            html.AppendLine("        body { font-family: Consolas, sans-serif; margin: 20px; background: #1e1e1e; color: #fff; }");
             html.AppendLine("        h1, h2 { color: #4ec9b0; }");
             html.AppendLine("        .chart-container { margin: 30px 0; background: #2d2d30; padding: 20px; border-radius: 5px; }");
             html.AppendLine("        .info { background: #252526; padding: 15px; border-radius: 5px; margin: 20px 0; }");
