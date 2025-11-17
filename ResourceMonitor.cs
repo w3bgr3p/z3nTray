@@ -398,6 +398,68 @@ namespace OtpTrayApp
             html.AppendLine("</head>");
             html.AppendLine("<body>");
 
+            // Build command line dictionary (PID -> CommandLine)
+            html.AppendLine("    <script>");
+            html.AppendLine("        var commandLines = {");
+            var cmdLineDict = new Dictionary<int, string>();
+            foreach (var snapshot in session.Snapshots)
+            {
+                if (!cmdLineDict.ContainsKey(snapshot.Pid) && !string.IsNullOrEmpty(snapshot.CommandLine))
+                {
+                    cmdLineDict[snapshot.Pid] = snapshot.CommandLine;
+                }
+            }
+            foreach (var evt in session.Events)
+            {
+                if (!cmdLineDict.ContainsKey(evt.Pid) && !string.IsNullOrEmpty(evt.CommandLine))
+                {
+                    cmdLineDict[evt.Pid] = evt.CommandLine;
+                }
+            }
+            foreach (var kvp in cmdLineDict)
+            {
+                var cmdLineEscaped = EscapeJavaScript(kvp.Value);
+                html.AppendLine($"            {kvp.Key}: '{cmdLineEscaped}',");
+            }
+            html.AppendLine("        };");
+            html.AppendLine("        function showCommandTooltip(pid, event) {");
+            html.AppendLine("            var cmdLine = commandLines[pid];");
+            html.AppendLine("            if (!cmdLine) return;");
+            html.AppendLine("            var tooltip = document.getElementById('cmdTooltip');");
+            html.AppendLine("            if (!tooltip) {");
+            html.AppendLine("                tooltip = document.createElement('div');");
+            html.AppendLine("                tooltip.id = 'cmdTooltip';");
+            html.AppendLine("                tooltip.style.position = 'fixed';");
+            html.AppendLine("                tooltip.style.background = 'rgba(0, 0, 0, 0.95)';");
+            html.AppendLine("                tooltip.style.color = '#ce9178';");
+            html.AppendLine("                tooltip.style.padding = '10px';");
+            html.AppendLine("                tooltip.style.borderRadius = '5px';");
+            html.AppendLine("                tooltip.style.maxWidth = '600px';");
+            html.AppendLine("                tooltip.style.wordBreak = 'break-all';");
+            html.AppendLine("                tooltip.style.fontSize = '11px';");
+            html.AppendLine("                tooltip.style.fontFamily = 'monospace';");
+            html.AppendLine("                tooltip.style.zIndex = '10000';");
+            html.AppendLine("                tooltip.style.border = '1px solid #4ec9b0';");
+            html.AppendLine("                tooltip.style.pointerEvents = 'none';");
+            html.AppendLine("                document.body.appendChild(tooltip);");
+            html.AppendLine("            }");
+            html.AppendLine("            tooltip.textContent = cmdLine;");
+            html.AppendLine("            tooltip.style.display = 'block';");
+            html.AppendLine("            tooltip.style.left = (event.clientX + 10) + 'px';");
+            html.AppendLine("            tooltip.style.top = (event.clientY + 10) + 'px';");
+            html.AppendLine("        }");
+            html.AppendLine("        function hideCommandTooltip() {");
+            html.AppendLine("            var tooltip = document.getElementById('cmdTooltip');");
+            html.AppendLine("            if (tooltip) tooltip.style.display = 'none';");
+            html.AppendLine("        }");
+            html.AppendLine("        function copyCommandLine(pid) {");
+            html.AppendLine("            var cmdLine = commandLines[pid];");
+            html.AppendLine("            if (cmdLine) {");
+            html.AppendLine("                copyToClipboard(cmdLine);");
+            html.AppendLine("            }");
+            html.AppendLine("        }");
+            html.AppendLine("    </script>");
+
             // Header
             html.AppendLine($"    <h1>Resource Usage Report</h1>");
             html.AppendLine($"    <div class='info'>");
@@ -658,16 +720,14 @@ namespace OtpTrayApp
             {
                 var cssClass = evt.EventType == "stopped" ? "event stopped" : "event";
                 var icon = evt.EventType == "started" ? "▶" : "■";
-                var cmdLineEscaped = System.Security.SecurityElement.Escape(evt.CommandLine ?? "");
-                var cmdLineForJs = EscapeJavaScript(evt.CommandLine ?? "");
 
                 html.AppendLine($"        <div class='{cssClass}'>");
                 html.AppendLine($"            <strong>{evt.Timestamp:HH:mm:ss}</strong> {icon} ");
 
-                // PID with tooltip and click-to-copy
+                // PID with hover tooltip and click-to-copy
                 if (!string.IsNullOrEmpty(evt.CommandLine))
                 {
-                    html.AppendLine($"            {evt.ProcessName} <span class='pid-info' onclick='copyToClipboard(\"{cmdLineForJs}\")' title='Click to copy command line'>PID:{evt.Pid}</span> {evt.EventType}");
+                    html.AppendLine($"            {evt.ProcessName} <span class='pid-info' onclick='copyCommandLine({evt.Pid})' onmousemove='showCommandTooltip({evt.Pid}, event)' onmouseleave='hideCommandTooltip()' title='Hover to view command line, click to copy'>PID:{evt.Pid}</span> {evt.EventType}");
                 }
                 else
                 {
@@ -677,12 +737,6 @@ namespace OtpTrayApp
                 if (!string.IsNullOrEmpty(evt.Account) && evt.Account != "unknown")
                 {
                     html.AppendLine($"            - Account: {evt.Account}");
-                }
-
-                // Show command line with word-wrap and click-to-copy
-                if (!string.IsNullOrEmpty(evt.CommandLine))
-                {
-                    html.AppendLine($"            <br><span class='cmd-short' onclick='copyToClipboard(\"{cmdLineForJs}\")' title='Click to copy to clipboard'>{cmdLineEscaped}</span>");
                 }
 
                 html.AppendLine("        </div>");
