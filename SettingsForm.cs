@@ -16,6 +16,7 @@ namespace OtpTrayApp
         private CheckBox chkShowLogs;
         private CheckBox chkShowRawCommandLine;
         private CheckBox chkEnableResourceMonitoring;
+        private NumericUpDown numResourceMonitoringInterval;
         private Button btnSave;
         private Button btnCancel;
 
@@ -128,6 +129,12 @@ namespace OtpTrayApp
 
             chkEnableResourceMonitoring = CreateCheckBox("Включить мониторинг ресурсов (для отладки утечек памяти)", 20, yPos);
             this.Controls.Add(chkEnableResourceMonitoring);
+            yPos += 30;
+
+            var lblResourceInterval = CreateLabel("Интервал мониторинга (мин):", 20, yPos, labelWidth);
+            numResourceMonitoringInterval = CreateNumeric(20 + labelWidth + padding, yPos, controlWidth, 1, 60, 1);
+            this.Controls.Add(lblResourceInterval);
+            this.Controls.Add(numResourceMonitoringInterval);
             yPos += 50;
 
             // Buttons
@@ -204,6 +211,7 @@ namespace OtpTrayApp
             chkShowLogs.Checked = Settings.ShowLogs;
             chkShowRawCommandLine.Checked = Settings.ShowRawCommandLine;
             chkEnableResourceMonitoring.Checked = Settings.EnableResourceMonitoring;
+            numResourceMonitoringInterval.Value = Settings.ResourceMonitoringIntervalMinutes;
         }
 
         private void BtnSave_Click(object? sender, EventArgs e)
@@ -218,6 +226,7 @@ namespace OtpTrayApp
             Settings.ShowLogs = chkShowLogs.Checked;
             Settings.ShowRawCommandLine = chkShowRawCommandLine.Checked;
             Settings.EnableResourceMonitoring = chkEnableResourceMonitoring.Checked;
+            Settings.ResourceMonitoringIntervalMinutes = (int)numResourceMonitoringInterval.Value;
 
             try
             {

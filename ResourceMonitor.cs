@@ -104,6 +104,7 @@ namespace OtpTrayApp
         private readonly string currentReportPath;
         private readonly string currentDataPath;
         private bool isRunning = false;
+        private int intervalMinutes = 1;
 
         public ResourceMonitor()
         {
@@ -124,11 +125,13 @@ namespace OtpTrayApp
         /// <summary>
         /// Start monitoring
         /// </summary>
-        public void Start()
+        public void Start(int intervalMinutes = 1)
         {
             lock (lockObj)
             {
                 if (isRunning) return;
+
+                this.intervalMinutes = intervalMinutes;
 
                 currentSession = new MonitoringSession
                 {
@@ -138,8 +141,8 @@ namespace OtpTrayApp
                 // Collect initial snapshot
                 CollectMetrics(null);
 
-                // Start timer for 1-minute intervals
-                collectionTimer = new System.Threading.Timer(CollectMetrics, null, TimeSpan.FromMinutes(1), TimeSpan.FromMinutes(1));
+                // Start timer with configured interval
+                collectionTimer = new System.Threading.Timer(CollectMetrics, null, TimeSpan.FromMinutes(intervalMinutes), TimeSpan.FromMinutes(intervalMinutes));
                 isRunning = true;
             }
         }
