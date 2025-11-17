@@ -108,9 +108,9 @@ namespace OtpTrayApp
         public ResourceMonitor()
         {
             // Create reports directory next to executable
-            var exeDir = AppContext.BaseDirectory;  
+            var exeDir = AppContext.BaseDirectory;
             reportsDirectory = Path.Combine(exeDir, "reports");
-      
+
 
             if (!Directory.Exists(reportsDirectory))
             {
@@ -377,7 +377,7 @@ namespace OtpTrayApp
             // Generate JSON data
             var reportData = PrepareReportData(session);
             var json = SerializeToJson(reportData);
-            
+
             // Save JSON as separate file for reference (optional)
             File.WriteAllText(jsonPath, json);
 
@@ -397,8 +397,8 @@ namespace OtpTrayApp
                 {
                     StartTime = session.StartTime.ToString("yyyy-MM-dd HH:mm:ss"),
                     EndTime = session.EndTime?.ToString("yyyy-MM-dd HH:mm:ss"),
-                    DurationMinutes = session.EndTime.HasValue 
-                        ? (session.EndTime.Value - session.StartTime).TotalMinutes 
+                    DurationMinutes = session.EndTime.HasValue
+                        ? (session.EndTime.Value - session.StartTime).TotalMinutes
                         : 0,
                     EndReason = session.EndReason,
                     IsActive = !session.EndTime.HasValue
@@ -443,14 +443,14 @@ namespace OtpTrayApp
             {
                 var pid = group.Key;
                 var account = group.FirstOrDefault()?.Account ?? "unknown";
-                var label = processName == "zbe1" && account != "unknown" 
-                    ? $"PID:{pid} ({account})" 
+                var label = processName == "zbe1" && account != "unknown"
+                    ? $"PID:{pid} ({account})"
                     : $"{processName} PID:{pid}";
 
                 var dataset = new DatasetInfo
                 {
                     Label = label,
-                    Data = timestamps.Select(t => 
+                    Data = timestamps.Select(t =>
                         group.FirstOrDefault(s => s.Timestamp == t)?.MemoryMB ?? 0
                     ).ToList(),
                     Color = GetChartColor(colorIndex++),
@@ -474,7 +474,7 @@ namespace OtpTrayApp
         {
             var sb = new StringBuilder();
             sb.AppendLine("{");
-            
+
             // Session
             sb.AppendLine("  \"session\": {");
             sb.AppendLine($"    \"startTime\": \"{EscapeJson(data.Session.StartTime)}\",");
@@ -595,18 +595,22 @@ namespace OtpTrayApp
             html.AppendLine("        .info { background: #161b22; border: 1px solid #30363d; padding: 12px 20px; border-radius: 6px; margin: 0 0 15px 0; }");
             html.AppendLine("        .event { padding: 8px 12px; margin-bottom: 6px; border-left: 3px solid #3fb950; background: #0d1117; border-radius: 4px; font-size: 12px; }");
             html.AppendLine("        .event.stopped { border-left-color: #f85149; }");
-            html.AppendLine("        .pid-info { color: #58a6ff; cursor: pointer; font-weight: 600; }");
-            html.AppendLine("        .cmd-short { ");
-            html.AppendLine("            color: #a5d6ff; ");
-            html.AppendLine("            font-family: 'Iosevka', 'Consolas', monospace; ");
-            html.AppendLine("            font-size: 11px; ");
-            html.AppendLine("            word-break: break-all; ");
-            html.AppendLine("            overflow-wrap: break-word; ");
-            html.AppendLine("            cursor: pointer; ");
-            html.AppendLine("            display: block; ");
-            html.AppendLine("            margin-top: 4px; ");
+            html.AppendLine("        .pid-info { color: #58a6ff; cursor: pointer; font-weight: 600; text-decoration: underline dotted; }");
+            html.AppendLine("        .cmd-tooltip {");
+            html.AppendLine("            position: fixed;");
+            html.AppendLine("            background: rgba(0, 0, 0, 0.95);");
+            html.AppendLine("            color: #a5d6ff;");
+            html.AppendLine("            padding: 10px;");
+            html.AppendLine("            border-radius: 5px;");
+            html.AppendLine("            max-width: 600px;");
+            html.AppendLine("            word-break: break-all;");
+            html.AppendLine("            font-size: 11px;");
+            html.AppendLine("            font-family: 'Iosevka', 'Consolas', monospace;");
+            html.AppendLine("            z-index: 10000;");
+            html.AppendLine("            border: 1px solid #58a6ff;");
+            html.AppendLine("            pointer-events: none;");
+            html.AppendLine("            display: none;");
             html.AppendLine("        }");
-            html.AppendLine("        .cmd-short:hover { text-decoration: underline; }");
             html.AppendLine("        .copy-feedback { ");
             html.AppendLine("            position: fixed; ");
             html.AppendLine("            top: 20px; ");
@@ -641,12 +645,23 @@ namespace OtpTrayApp
             html.AppendLine("        <div id='eventsTimeline' class='chart-container'></div>");
             html.AppendLine("        <div class='loading'>Loading data...</div>");
             html.AppendLine("    </div>");
-            
+            html.AppendLine("    <div id='cmdTooltip' class='cmd-tooltip'></div>");
+
             html.AppendLine("    <script>");
             html.AppendLine("        // Inline JSON data");
             html.AppendLine($"        const reportData = {jsonData};");
             html.AppendLine();
-            
+
+            // Build commandLines dictionary (PID -> CommandLine)
+            html.AppendLine("        // Build command line dictionary (PID -> CommandLine)");
+            html.AppendLine("        const commandLines = {};");
+            html.AppendLine("        reportData.events.forEach(evt => {");
+            html.AppendLine("            if (evt.commandLine && !commandLines[evt.pid]) {");
+            html.AppendLine("                commandLines[evt.pid] = evt.commandLine;");
+            html.AppendLine("            }");
+            html.AppendLine("        });");
+            html.AppendLine();
+
             // Copy to clipboard function
             html.AppendLine("        function copyToClipboard(text) {");
             html.AppendLine("            navigator.clipboard.writeText(text).then(function() {");
@@ -656,7 +671,7 @@ namespace OtpTrayApp
             html.AppendLine("            });");
             html.AppendLine("        }");
             html.AppendLine();
-            
+
             html.AppendLine("        function showCopyFeedback() {");
             html.AppendLine("            var feedback = document.createElement('div');");
             html.AppendLine("            feedback.className = 'copy-feedback';");
@@ -665,6 +680,32 @@ namespace OtpTrayApp
             html.AppendLine("            setTimeout(function() {");
             html.AppendLine("                document.body.removeChild(feedback);");
             html.AppendLine("            }, 2000);");
+            html.AppendLine("        }");
+            html.AppendLine();
+
+            // Tooltip functions
+            html.AppendLine("        function showCommandTooltip(pid, event) {");
+            html.AppendLine("            const cmdLine = commandLines[pid];");
+            html.AppendLine("            if (!cmdLine) return;");
+            html.AppendLine("            const tooltip = document.getElementById('cmdTooltip');");
+            html.AppendLine("            tooltip.textContent = cmdLine;");
+            html.AppendLine("            tooltip.style.display = 'block';");
+            html.AppendLine("            tooltip.style.left = (event.clientX + 10) + 'px';");
+            html.AppendLine("            tooltip.style.top = (event.clientY + 10) + 'px';");
+            html.AppendLine("        }");
+            html.AppendLine();
+
+            html.AppendLine("        function hideCommandTooltip() {");
+            html.AppendLine("            const tooltip = document.getElementById('cmdTooltip');");
+            html.AppendLine("            tooltip.style.display = 'none';");
+            html.AppendLine("        }");
+            html.AppendLine();
+
+            html.AppendLine("        function copyCommandLine(pid) {");
+            html.AppendLine("            const cmdLine = commandLines[pid];");
+            html.AppendLine("            if (cmdLine) {");
+            html.AppendLine("                copyToClipboard(cmdLine);");
+            html.AppendLine("            }");
             html.AppendLine("        }");
             html.AppendLine();
 
@@ -785,17 +826,13 @@ namespace OtpTrayApp
             html.AppendLine("                html += '<strong>' + escapeHtml(evt.timestamp) + '</strong> ' + icon + ' ';");
             html.AppendLine("                ");
             html.AppendLine("                if (evt.commandLine) {");
-            html.AppendLine("                    html += evt.processName + ' <span class=\"pid-info\" onclick=\"copyToClipboard(\\'' + evt.commandLine.replace(/'/g, \"\\\\''\") + '\\')\" title=\"Click to copy command line\">PID:' + evt.pid + '</span> ' + evt.eventType;");
+            html.AppendLine("                    html += evt.processName + ' <span class=\"pid-info\" onclick=\"copyCommandLine(' + evt.pid + ')\" onmousemove=\"showCommandTooltip(' + evt.pid + ', event)\" onmouseleave=\"hideCommandTooltip()\" title=\"Hover to view, click to copy\">PID:' + evt.pid + '</span> ' + evt.eventType;");
             html.AppendLine("                } else {");
             html.AppendLine("                    html += evt.processName + ' PID:' + evt.pid + ' ' + evt.eventType;");
             html.AppendLine("                }");
             html.AppendLine("                ");
             html.AppendLine("                if (evt.account && evt.account !== 'unknown') {");
             html.AppendLine("                    html += ' - Account: ' + escapeHtml(evt.account);");
-            html.AppendLine("                }");
-            html.AppendLine("                ");
-            html.AppendLine("                if (evt.commandLine) {");
-            html.AppendLine("                    html += '<br><span class=\"cmd-short\" onclick=\"copyToClipboard(\\'' + evt.commandLine.replace(/'/g, \"\\\\''\") + '\\')\" title=\"Click to copy to clipboard\">' + escapeHtml(evt.commandLine) + '</span>';");
             html.AppendLine("                }");
             html.AppendLine("                ");
             html.AppendLine("                html += '</div>';");
@@ -863,7 +900,7 @@ namespace OtpTrayApp
         {
             try
             {
-                var exeDir = AppContext.BaseDirectory;  
+                var exeDir = AppContext.BaseDirectory;
                 var reportsDirectory = Path.Combine(exeDir, "reports");
 
                 if (!Directory.Exists(reportsDirectory))
