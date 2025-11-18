@@ -27,6 +27,8 @@ namespace OtpTrayApp
         // Resource monitoring
         public bool EnableResourceMonitoring { get; set; }
         public int ResourceMonitoringIntervalMinutes { get; set; }
+        public int MaxMonitoringRecordsPerFile { get; set; }
+        public int MonitoringReportRetentionDays { get; set; }
 
         // Default values
         public AppSettings()
@@ -42,6 +44,8 @@ namespace OtpTrayApp
             ShowRawCommandLine = false;
             EnableResourceMonitoring = false;
             ResourceMonitoringIntervalMinutes = 1;
+            MaxMonitoringRecordsPerFile = 2000;
+            MonitoringReportRetentionDays = 7;
         }
 
         // Load from app.config
@@ -62,6 +66,8 @@ namespace OtpTrayApp
                 settings.ShowRawCommandLine = GetBool("ShowRawCommandLine", false);
                 settings.EnableResourceMonitoring = GetBool("EnableResourceMonitoring", false);
                 settings.ResourceMonitoringIntervalMinutes = GetInt("ResourceMonitoringIntervalMinutes", 1);
+                settings.MaxMonitoringRecordsPerFile = GetInt("MaxMonitoringRecordsPerFile", 2000);
+                settings.MonitoringReportRetentionDays = GetInt("MonitoringReportRetentionDays", 7);
             }
             catch (Exception ex)
             {
@@ -93,6 +99,8 @@ namespace OtpTrayApp
                 SetValue(config, "ShowRawCommandLine", ShowRawCommandLine.ToString());
                 SetValue(config, "EnableResourceMonitoring", EnableResourceMonitoring.ToString());
                 SetValue(config, "ResourceMonitoringIntervalMinutes", ResourceMonitoringIntervalMinutes.ToString());
+                SetValue(config, "MaxMonitoringRecordsPerFile", MaxMonitoringRecordsPerFile.ToString());
+                SetValue(config, "MonitoringReportRetentionDays", MonitoringReportRetentionDays.ToString());
 
                 config.Save(ConfigurationSaveMode.Modified);
                 ConfigurationManager.RefreshSection("appSettings");
@@ -141,7 +149,9 @@ namespace OtpTrayApp
                 ShowLogs = this.ShowLogs,
                 ShowRawCommandLine = this.ShowRawCommandLine,
                 EnableResourceMonitoring = this.EnableResourceMonitoring,
-                ResourceMonitoringIntervalMinutes = this.ResourceMonitoringIntervalMinutes
+                ResourceMonitoringIntervalMinutes = this.ResourceMonitoringIntervalMinutes,
+                MaxMonitoringRecordsPerFile = this.MaxMonitoringRecordsPerFile,
+                MonitoringReportRetentionDays = this.MonitoringReportRetentionDays
             };
         }
     }

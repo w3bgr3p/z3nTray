@@ -20,6 +20,8 @@ namespace OtpTrayApp
         // Monitor tab controls
         private CheckBox chkEnableResourceMonitoring;
         private NumericUpDown numResourceMonitoringInterval;
+        private NumericUpDown numMaxMonitoringRecordsPerFile;
+        private NumericUpDown numMonitoringReportRetentionDays;
 
         // Interface tab controls
         private CheckBox chkShowLogs;
@@ -205,7 +207,7 @@ namespace OtpTrayApp
             {
                 Text = "Resource Monitoring",
                 Location = new Point(margin, yPos),
-                Size = new Size(groupBoxWidth, 120),
+                Size = new Size(groupBoxWidth, 180),
                 ForeColor = Color.White,
                 Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right
             };
@@ -219,16 +221,37 @@ namespace OtpTrayApp
             grpMonitor.Controls.Add(lblInterval);
             grpMonitor.Controls.Add(numResourceMonitoringInterval);
 
-            yPos += 140;
+            var lblMaxRecords = CreateLabel("Max records per file:", 20, 85, labelWidth);
+            numMaxMonitoringRecordsPerFile = CreateNumeric(20 + labelWidth + padding, 85, controlWidth, 100, 10000, 100);
+            grpMonitor.Controls.Add(lblMaxRecords);
+            grpMonitor.Controls.Add(numMaxMonitoringRecordsPerFile);
+
+            var lblRetention = CreateLabel("Report retention (days):", 20, 115, labelWidth);
+            numMonitoringReportRetentionDays = CreateNumeric(20 + labelWidth + padding, 115, controlWidth, 1, 365, 1);
+            grpMonitor.Controls.Add(lblRetention);
+            grpMonitor.Controls.Add(numMonitoringReportRetentionDays);
+
+            var lblRotationInfo = new Label
+            {
+                Text = "Files are automatically rotated daily or when record limit is reached",
+                Location = new Point(20, 145),
+                Size = new Size(groupBoxWidth - 40, 25),
+                ForeColor = Color.FromArgb(150, 150, 150),
+                Font = new Font(this.Font.FontFamily, 8)
+            };
+            grpMonitor.Controls.Add(lblRotationInfo);
+
+            yPos += 200;
 
             // Info label
             var lblInfo = new Label
             {
                 Text = "Resource monitoring collects memory usage data from ZennoPoster\n" +
                        "and zbe1 processes. Reports are saved in the ./reports/ directory.\n\n" +
-                       "Use the 'Report' button in Process Stats to view the latest report.",
+                       "Reports are automatically rotated daily and old files are deleted\n" +
+                       "after the retention period. Use the 'Report' button to view latest report.",
                 Location = new Point(margin, yPos),
-                Size = new Size(groupBoxWidth, 80),
+                Size = new Size(groupBoxWidth, 100),
                 ForeColor = Color.FromArgb(180, 180, 180),
                 AutoSize = false
             };
@@ -317,6 +340,8 @@ namespace OtpTrayApp
             chkShowRawCommandLine.Checked = Settings.ShowRawCommandLine;
             chkEnableResourceMonitoring.Checked = Settings.EnableResourceMonitoring;
             numResourceMonitoringInterval.Value = Settings.ResourceMonitoringIntervalMinutes;
+            numMaxMonitoringRecordsPerFile.Value = Settings.MaxMonitoringRecordsPerFile;
+            numMonitoringReportRetentionDays.Value = Settings.MonitoringReportRetentionDays;
         }
 
         private void BtnSave_Click(object? sender, EventArgs e)
@@ -332,6 +357,8 @@ namespace OtpTrayApp
             Settings.ShowRawCommandLine = chkShowRawCommandLine.Checked;
             Settings.EnableResourceMonitoring = chkEnableResourceMonitoring.Checked;
             Settings.ResourceMonitoringIntervalMinutes = (int)numResourceMonitoringInterval.Value;
+            Settings.MaxMonitoringRecordsPerFile = (int)numMaxMonitoringRecordsPerFile.Value;
+            Settings.MonitoringReportRetentionDays = (int)numMonitoringReportRetentionDays.Value;
 
             try
             {
