@@ -89,6 +89,12 @@ Settings are stored in `App.config`:
 <!-- Automation -->
 <add key="AutoCheckInterval" value="0" />             <!-- minutes, 0 = disabled -->
 
+<!-- Resource Monitoring -->
+<add key="EnableResourceMonitoring" value="False" />           <!-- enable monitoring -->
+<add key="ResourceMonitoringIntervalMinutes" value="1" />      <!-- collection interval -->
+<add key="MaxMonitoringRecordsPerFile" value="2000" />         <!-- records before rotation -->
+<add key="MonitoringReportRetentionDays" value="7" />          <!-- days to keep reports -->
+
 <!-- UI -->
 <add key="ShowLogs" value="False" />                  <!-- balloon tips vs silent -->
 <add key="ShowRawCommandLine" value="False" />        <!-- show full command line -->
@@ -123,17 +129,38 @@ If `AutoCheckInterval > 0`:
 - Executes Check & Kill automatically
 - Logging depends on `ShowLogs` setting
 
+### Resource Monitoring
+
+If `EnableResourceMonitoring = True`:
+- Collects memory usage data from ZennoPoster and zbe1 processes
+- Generates HTML reports with interactive charts (Chart.js)
+- Reports stored in `./reports/` directory
+
+**File Rotation**:
+- Reports are named `resource_monitor_report_YYYY-MM-DD.html`
+- Automatically rotates daily or when record limit is reached
+- Old reports are deleted after retention period expires
+- Each report includes both timestamped snapshots and process lifecycle events
+
+**Default Settings**:
+- Collection interval: 1 minute
+- Max records per file: 2000
+- Retention period: 7 days
+
 ## File Structure
 
 ```
 OtpTrayApp/
 ├── OtpTrayContext.cs          # Main tray application
 ├── ProcessManager.cs          # Process logic (no z3nCore deps)
+├── ResourceMonitor.cs         # Resource monitoring system
 ├── AppSettings.cs             # App.config management
 ├── ProcessStatsForm.cs        # Statistics window
 ├── SettingsForm.cs            # Settings dialog
 ├── OtpInputForm.cs            # OTP input dialog
-└── App.config                 # Configuration file
+├── App.config                 # Configuration file
+└── reports/                   # Monitoring reports directory
+    └── resource_monitor_report_YYYY-MM-DD.html
 ```
 
 ## Technical Details
