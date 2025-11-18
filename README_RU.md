@@ -77,18 +77,24 @@ cd OtpTrayApp
 <add key="MaxMemoryForInstance" value="1000" />      <!-- МБ -->
 <add key="MaxAgeForInstance" value="30" />            <!-- минуты -->
 
-<!-- Главный процесс ZennoPoster -->
+        <!-- Главный процесс ZennoPoster -->
 <add key="MaxMemoryForZennoposter" value="20000" />  <!-- МБ -->
 
-<!-- Флаги завершения -->
+        <!-- Флаги завершения -->
 <add key="KillOld" value="True" />
 <add key="KillHeavy" value="True" />
 <add key="KillMain" value="False" />                  <!-- ОПАСНО! -->
 
-<!-- Автоматизация -->
+        <!-- Автоматизация -->
 <add key="AutoCheckInterval" value="0" />             <!-- минуты, 0 = выкл -->
 
-<!-- UI -->
+        <!-- Мониторинг ресурсов -->
+<add key="EnableResourceMonitoring" value="False" />           <!-- включить мониторинг -->
+<add key="ResourceMonitoringIntervalMinutes" value="1" />      <!-- интервал сбора -->
+<add key="MaxMonitoringRecordsPerFile" value="2000" />         <!-- записей до ротации -->
+<add key="MonitoringReportRetentionDays" value="7" />          <!-- дней хранения отчетов -->
+
+        <!-- UI -->
 <add key="ShowLogs" value="False" />                  <!-- всплывашки vs тихий режим -->
 <add key="ShowRawCommandLine" value="False" />        <!-- полная командная строка -->
 ```
@@ -122,17 +128,38 @@ cd OtpTrayApp
 - Выполняет Check & Kill автоматически
 - Логирование зависит от настройки `ShowLogs`
 
+### Мониторинг ресурсов
+
+Если `EnableResourceMonitoring = True`:
+- Собирает данные об использовании памяти процессами ZennoPoster и zbe1
+- Генерирует HTML отчеты с интерактивными графиками (Chart.js)
+- Отчеты сохраняются в директорию `./reports/`
+
+**Ротация файлов**:
+- Отчеты имеют имена `resource_monitor_report_YYYY-MM-DD.html`
+- Автоматическая ротация ежедневно или при достижении лимита записей
+- Старые отчеты удаляются после истечения срока хранения
+- Каждый отчет включает временные снимки и события жизненного цикла процессов
+
+**Настройки по умолчанию**:
+- Интервал сбора: 1 минута
+- Макс. записей на файл: 2000
+- Период хранения: 7 дней
+
 ## Структура файлов
 
 ```
 OtpTrayApp/
 ├── OtpTrayContext.cs          # Главное приложение в трее
 ├── ProcessManager.cs          # Логика процессов (без z3nCore)
+├── ResourceMonitor.cs         # Система мониторинга ресурсов
 ├── AppSettings.cs             # Управление App.config
 ├── ProcessStatsForm.cs        # Окно статистики
 ├── SettingsForm.cs            # Диалог настроек
 ├── OtpInputForm.cs            # Диалог ввода OTP
-└── App.config                 # Файл конфигурации
+├── App.config                 # Файл конфигурации
+└── reports/                   # Директория отчетов мониторинга
+    └── resource_monitor_report_YYYY-MM-DD.html
 ```
 
 ## Технические детали

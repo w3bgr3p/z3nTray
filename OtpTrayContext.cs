@@ -260,7 +260,10 @@ namespace OtpTrayApp
             StopResourceMonitoring(); // Stop existing monitor if any
 
             resourceMonitor = new ResourceMonitor();
-            resourceMonitor.Start();
+            resourceMonitor.Start(
+                settings.ResourceMonitoringIntervalMinutes,
+                settings.MaxMonitoringRecordsPerFile,
+                settings.MonitoringReportRetentionDays);
         }
 
         private void StopResourceMonitoring()

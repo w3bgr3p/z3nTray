@@ -101,9 +101,11 @@ namespace OtpTrayApp
         private MonitoringSession currentSession;
         private Dictionary<int, ProcessSnapshot> lastSnapshots = new Dictionary<int, ProcessSnapshot>();
         private readonly string reportsDirectory;
-        private readonly string currentReportPath;
-        private readonly string currentDataPath;
         private bool isRunning = false;
+        private int intervalMinutes = 1;
+        private DateTime currentReportDate;
+        private int maxRecordsPerFile = 2000;
+        private int retentionDays = 7;
 
         public ResourceMonitor()
         {
@@ -111,35 +113,39 @@ namespace OtpTrayApp
             var exeDir = AppContext.BaseDirectory;
             reportsDirectory = Path.Combine(exeDir, "reports");
 
-
             if (!Directory.Exists(reportsDirectory))
             {
                 Directory.CreateDirectory(reportsDirectory);
             }
 
-            currentReportPath = Path.Combine(reportsDirectory, "current_report.html");
-            currentDataPath = Path.Combine(reportsDirectory, "current_data.json");
+            currentReportDate = DateTime.Now.Date;
         }
 
         /// <summary>
         /// Start monitoring
         /// </summary>
-        public void Start()
+        public void Start(int intervalMinutes = 1, int maxRecordsPerFile = 2000, int retentionDays = 7)
         {
             lock (lockObj)
             {
                 if (isRunning) return;
+
+                this.intervalMinutes = intervalMinutes;
+                this.maxRecordsPerFile = maxRecordsPerFile;
+                this.retentionDays = retentionDays;
+                this.currentReportDate = DateTime.Now.Date;
 
                 currentSession = new MonitoringSession
                 {
                     StartTime = DateTime.Now
                 };
 
-                // Collect initial snapshot
-                CollectMetrics(null);
+                // Clean up old reports
+                CleanupOldReports();
 
-                // Start timer for 1-minute intervals
-                collectionTimer = new System.Threading.Timer(CollectMetrics, null, TimeSpan.FromMinutes(1), TimeSpan.FromMinutes(1));
+                // Start timer with configured interval - first collection happens after interval
+                // This prevents blocking the UI thread on startup
+                collectionTimer = new System.Threading.Timer(CollectMetrics, null, TimeSpan.FromMinutes(intervalMinutes), TimeSpan.FromMinutes(intervalMinutes));
                 isRunning = true;
             }
         }
@@ -198,9 +204,29 @@ namespace OtpTrayApp
         }
 
         /// <summary>
-        /// Collect metrics from all processes
+        /// Collect metrics from all processes (async via ThreadPool)
         /// </summary>
         private void CollectMetrics(object state)
+        {
+            // Run in background thread to avoid blocking
+            System.Threading.ThreadPool.QueueUserWorkItem(_ =>
+            {
+                try
+                {
+                    CollectMetricsInternal();
+                }
+                catch (Exception ex)
+                {
+                    // Log error silently, don't crash the timer
+                    System.Diagnostics.Debug.WriteLine($"Error collecting metrics: {ex.Message}");
+                }
+            });
+        }
+
+        /// <summary>
+        /// Internal synchronous metrics collection
+        /// </summary>
+        private void CollectMetricsInternal()
         {
             lock (lockObj)
             {
@@ -292,8 +318,15 @@ namespace OtpTrayApp
                     }
                 }
 
+                // Check if file rotation is needed
+                if (ShouldRotateFile())
+                {
+                    RotateFile();
+                }
+
                 // Update current report
-                GenerateReport(currentSession, currentReportPath, currentDataPath);
+                var (htmlPath, jsonPath) = GetCurrentReportPaths();
+                GenerateReport(currentSession, htmlPath, jsonPath);
             }
         }
 
@@ -359,14 +392,118 @@ namespace OtpTrayApp
         }
 
         /// <summary>
+        /// Get report paths for current date
+        /// </summary>
+        private (string htmlPath, string jsonPath) GetCurrentReportPaths()
+        {
+            var dateStr = currentReportDate.ToString("yyyy-MM-dd");
+            var htmlPath = Path.Combine(reportsDirectory, $"resource_monitor_report_{dateStr}.html");
+            var jsonPath = Path.Combine(reportsDirectory, $"resource_monitor_data_{dateStr}.json");
+            return (htmlPath, jsonPath);
+        }
+
+        /// <summary>
+        /// Check if file rotation is needed (new day or record limit exceeded)
+        /// </summary>
+        private bool ShouldRotateFile()
+        {
+            var today = DateTime.Now.Date;
+
+            // Check if it's a new day
+            if (today != currentReportDate)
+                return true;
+
+            // Check if record limit exceeded
+            if (currentSession != null && currentSession.Snapshots.Count >= maxRecordsPerFile)
+                return true;
+
+            return false;
+        }
+
+        /// <summary>
+        /// Rotate to new file (called when day changes or record limit exceeded)
+        /// </summary>
+        private void RotateFile()
+        {
+            if (currentSession == null) return;
+
+            // Save current session
+            currentSession.EndTime = DateTime.Now;
+            currentSession.EndReason = "FileRotation";
+            var (htmlPath, jsonPath) = GetCurrentReportPaths();
+            GenerateReport(currentSession, htmlPath, jsonPath);
+
+            // Start new session
+            currentReportDate = DateTime.Now.Date;
+            currentSession = new MonitoringSession
+            {
+                StartTime = DateTime.Now
+            };
+            lastSnapshots.Clear();
+
+            // Clean up old reports
+            CleanupOldReports();
+        }
+
+        /// <summary>
+        /// Delete reports older than retention period
+        /// </summary>
+        private void CleanupOldReports()
+        {
+            try
+            {
+                var cutoffDate = DateTime.Now.Date.AddDays(-retentionDays);
+                var allReports = Directory.GetFiles(reportsDirectory, "resource_monitor_report_*.html");
+
+                foreach (var reportPath in allReports)
+                {
+                    // Extract date from filename: resource_monitor_report_2025-11-18.html
+                    var filename = Path.GetFileNameWithoutExtension(reportPath);
+                    var parts = filename.Split('_');
+                    if (parts.Length >= 4)
+                    {
+                        var dateStr = parts[3]; // "2025-11-18"
+                        if (DateTime.TryParse(dateStr, out DateTime reportDate))
+                        {
+                            if (reportDate.Date < cutoffDate)
+                            {
+                                // Delete HTML and JSON files
+                                File.Delete(reportPath);
+                                var jsonPath = reportPath.Replace("_report_", "_data_").Replace(".html", ".json");
+                                if (File.Exists(jsonPath))
+                                    File.Delete(jsonPath);
+                            }
+                        }
+                    }
+                }
+
+                // Also clean up old format files (report_YYYY-MM-DD_HH-mm-ss.html)
+                var oldFormatReports = Directory.GetFiles(reportsDirectory, "report_*.html");
+                foreach (var reportPath in oldFormatReports)
+                {
+                    var fileInfo = new FileInfo(reportPath);
+                    if (fileInfo.LastWriteTime.Date < cutoffDate)
+                    {
+                        File.Delete(reportPath);
+                        var jsonPath = reportPath.Replace("report_", "data_");
+                        if (File.Exists(jsonPath))
+                            File.Delete(jsonPath);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Error cleaning up old reports: {ex.Message}");
+            }
+        }
+
+        /// <summary>
         /// Save session report to timestamped file
         /// </summary>
         private void SaveSessionReport(MonitoringSession session)
         {
-            var timestamp = session.StartTime.ToString("yyyy-MM-dd_HH-mm-ss");
-            var reportPath = Path.Combine(reportsDirectory, $"report_{timestamp}.html");
-            var dataPath = Path.Combine(reportsDirectory, $"data_{timestamp}.json");
-            GenerateReport(session, reportPath, dataPath);
+            var (htmlPath, jsonPath) = GetCurrentReportPaths();
+            GenerateReport(session, htmlPath, jsonPath);
         }
 
         /// <summary>
@@ -878,16 +1015,25 @@ namespace OtpTrayApp
         /// </summary>
         public string GetLastReportPath()
         {
-            if (File.Exists(currentReportPath))
+            // Check today's report first
+            var (htmlPath, _) = GetCurrentReportPaths();
+            if (File.Exists(htmlPath))
             {
-                return currentReportPath;
+                return htmlPath;
             }
 
-            // Find latest timestamped report
-            var reports = Directory.GetFiles(reportsDirectory, "report_*.html");
+            // Find latest report (new format)
+            var reports = Directory.GetFiles(reportsDirectory, "resource_monitor_report_*.html");
             if (reports.Length > 0)
             {
                 return reports.OrderByDescending(f => File.GetLastWriteTime(f)).First();
+            }
+
+            // Fallback to old format
+            var oldReports = Directory.GetFiles(reportsDirectory, "report_*.html");
+            if (oldReports.Length > 0)
+            {
+                return oldReports.OrderByDescending(f => File.GetLastWriteTime(f)).First();
             }
 
             return null;
@@ -906,18 +1052,26 @@ namespace OtpTrayApp
                 if (!Directory.Exists(reportsDirectory))
                     return null;
 
-                var currentReportPath = Path.Combine(reportsDirectory, "current_report.html");
-
-                if (File.Exists(currentReportPath))
+                // Check today's report first
+                var dateStr = DateTime.Now.Date.ToString("yyyy-MM-dd");
+                var todayReport = Path.Combine(reportsDirectory, $"resource_monitor_report_{dateStr}.html");
+                if (File.Exists(todayReport))
                 {
-                    return currentReportPath;
+                    return todayReport;
                 }
 
-                // Find latest timestamped report
-                var reports = Directory.GetFiles(reportsDirectory, "report_*.html");
+                // Find latest report (new format)
+                var reports = Directory.GetFiles(reportsDirectory, "resource_monitor_report_*.html");
                 if (reports.Length > 0)
                 {
                     return reports.OrderByDescending(f => File.GetLastWriteTime(f)).First();
+                }
+
+                // Fallback to old format
+                var oldReports = Directory.GetFiles(reportsDirectory, "report_*.html");
+                if (oldReports.Length > 0)
+                {
+                    return oldReports.OrderByDescending(f => File.GetLastWriteTime(f)).First();
                 }
             }
             catch { }
