@@ -287,7 +287,7 @@ namespace OtpTrayApp
             return new NumericUpDown
             {
                 Location = new Point(x, y),
-                Size = new Size(width, 20),
+                Size = new Size(width, 25),
                 Minimum = min,
                 Maximum = max,
                 Increment = increment,
