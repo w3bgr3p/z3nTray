@@ -44,13 +44,17 @@ namespace OtpTrayApp
             int labelWidth = 260;
             int controlWidth = 120;
             int padding = 10;
+            int margin = 10;
+
+            // Calculate dynamic width based on form client size
+            int groupBoxWidth = this.ClientSize.Width - margin * 2;
 
             // Browser processes settings
             var grpBrowser = new GroupBox
             {
                 Text = "Процессы браузера (zbe1)",
-                Location = new Point(10, yPos),
-                Size = new Size(410, 90),
+                Location = new Point(margin, yPos),
+                Size = new Size(groupBoxWidth, 90),
                 ForeColor = Color.White,
                 Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right
             };
@@ -59,12 +63,14 @@ namespace OtpTrayApp
 
             var lblMaxMem = CreateLabel("Макс память (MB):", 20, yPos, labelWidth);
             numMaxMemInstance = CreateNumeric(20 + labelWidth + padding, yPos, controlWidth, 100, 10000, 100);
+            numMaxMemInstance.Anchor = AnchorStyles.Top | AnchorStyles.Right;
             grpBrowser.Controls.Add(lblMaxMem);
             grpBrowser.Controls.Add(numMaxMemInstance);
             yPos += 30;
 
             var lblMaxAge = CreateLabel("Макс возраст (мин):", 20, yPos, labelWidth);
             numMaxAgeInstance = CreateNumeric(20 + labelWidth + padding, yPos, controlWidth, 5, 1440, 5);
+            numMaxAgeInstance.Anchor = AnchorStyles.Top | AnchorStyles.Right;
             grpBrowser.Controls.Add(lblMaxAge);
             grpBrowser.Controls.Add(numMaxAgeInstance);
 
@@ -73,8 +79,8 @@ namespace OtpTrayApp
             var grpMain = new GroupBox
             {
                 Text = "Главный процесс (ZennoPoster)",
-                Location = new Point(10, yPos),
-                Size = new Size(410, 60),
+                Location = new Point(margin, yPos),
+                Size = new Size(groupBoxWidth, 60),
                 ForeColor = Color.White,
                 Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right
             };
@@ -83,6 +89,7 @@ namespace OtpTrayApp
 
             var lblMaxMemZP = CreateLabel("Макс память (MB):", 20, yPos, labelWidth);
             numMaxMemZP = CreateNumeric(20 + labelWidth + padding, yPos, controlWidth, 1000, 100000, 1000);
+            numMaxMemZP.Anchor = AnchorStyles.Top | AnchorStyles.Right;
             grpMain.Controls.Add(lblMaxMemZP);
             grpMain.Controls.Add(numMaxMemZP);
 
@@ -91,8 +98,8 @@ namespace OtpTrayApp
             var grpKill = new GroupBox
             {
                 Text = "Параметры завершения",
-                Location = new Point(10, yPos),
-                Size = new Size(410, 110),
+                Location = new Point(margin, yPos),
+                Size = new Size(groupBoxWidth, 110),
                 ForeColor = Color.White,
                 Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right
             };
@@ -115,6 +122,7 @@ namespace OtpTrayApp
             yPos = 340;
             var lblAutoCheck = CreateLabel("Автопроверка (мин, 0 = выкл):", 20, yPos, labelWidth);
             numAutoCheckInterval = CreateNumeric(20 + labelWidth + padding, yPos, controlWidth, 0, 1440, 1);
+            numAutoCheckInterval.Anchor = AnchorStyles.Top | AnchorStyles.Right;
             this.Controls.Add(lblAutoCheck);
             this.Controls.Add(numAutoCheckInterval);
             yPos += 30;
@@ -133,29 +141,20 @@ namespace OtpTrayApp
 
             var lblResourceInterval = CreateLabel("Интервал мониторинга (мин):", 20, yPos, labelWidth);
             numResourceMonitoringInterval = CreateNumeric(20 + labelWidth + padding, yPos, controlWidth, 1, 60, 1);
+            numResourceMonitoringInterval.Anchor = AnchorStyles.Top | AnchorStyles.Right;
             this.Controls.Add(lblResourceInterval);
             this.Controls.Add(numResourceMonitoringInterval);
             yPos += 50;
 
-            // Buttons
-            btnSave = new Button
-            {
-                Text = "Сохранить",
-                Location = new Point(230, yPos),
-                Size = new Size(90, 30),
-                FlatStyle = FlatStyle.Flat,
-                BackColor = Color.FromArgb(0, 122, 204),
-                ForeColor = Color.White,
-                Anchor = AnchorStyles.Bottom | AnchorStyles.Right
-            };
-            btnSave.Click += BtnSave_Click;
-            this.Controls.Add(btnSave);
+            // Buttons - positioned from the right edge
+            int buttonWidth = 90;
+            int buttonSpacing = 10;
 
             btnCancel = new Button
             {
                 Text = "Отмена",
-                Location = new Point(330, yPos),
-                Size = new Size(90, 30),
+                Location = new Point(this.ClientSize.Width - buttonWidth - margin, yPos),
+                Size = new Size(buttonWidth, 30),
                 FlatStyle = FlatStyle.Flat,
                 BackColor = Color.FromArgb(60, 60, 60),
                 ForeColor = Color.White,
@@ -163,6 +162,19 @@ namespace OtpTrayApp
             };
             btnCancel.Click += (s, e) => this.DialogResult = DialogResult.Cancel;
             this.Controls.Add(btnCancel);
+
+            btnSave = new Button
+            {
+                Text = "Сохранить",
+                Location = new Point(this.ClientSize.Width - buttonWidth * 2 - buttonSpacing - margin, yPos),
+                Size = new Size(buttonWidth, 30),
+                FlatStyle = FlatStyle.Flat,
+                BackColor = Color.FromArgb(0, 122, 204),
+                ForeColor = Color.White,
+                Anchor = AnchorStyles.Bottom | AnchorStyles.Right
+            };
+            btnSave.Click += BtnSave_Click;
+            this.Controls.Add(btnSave);
         }
 
         private Label CreateLabel(string text, int x, int y, int width)
@@ -194,8 +206,9 @@ namespace OtpTrayApp
             {
                 Text = text,
                 Location = new Point(x, y),
-                Size = new Size(350, 20),
-                ForeColor = Color.White
+                Size = new Size(this.ClientSize.Width - x - 30, 20),
+                ForeColor = Color.White,
+                Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right
             };
         }
 
