@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Drawing;
 using System.Windows.Forms;
 
@@ -6,6 +6,9 @@ namespace OtpTrayApp
 {
     public class SettingsForm : Form
     {
+        private TabControl tabControl;
+
+        // Killer tab controls
         private NumericUpDown numMaxMemInstance;
         private NumericUpDown numMaxAgeInstance;
         private NumericUpDown numMaxMemZP;
@@ -13,10 +16,15 @@ namespace OtpTrayApp
         private CheckBox chkKillOld;
         private CheckBox chkKillHeavy;
         private CheckBox chkKillMain;
-        private CheckBox chkShowLogs;
-        private CheckBox chkShowRawCommandLine;
+
+        // Monitor tab controls
         private CheckBox chkEnableResourceMonitoring;
         private NumericUpDown numResourceMonitoringInterval;
+
+        // Interface tab controls
+        private CheckBox chkShowLogs;
+        private CheckBox chkShowRawCommandLine;
+
         private Button btnSave;
         private Button btnCancel;
 
@@ -31,129 +39,41 @@ namespace OtpTrayApp
 
         private void InitializeComponents()
         {
-            this.Text = "Настройки менеджера процессов";
-            this.Size = new Size(450, 550);
+            this.Text = "Process Manager Settings";
+            this.Size = new Size(550, 500);
             this.FormBorderStyle = FormBorderStyle.Sizable;
+            this.MinimumSize = new Size(450, 400);
             this.MaximizeBox = false;
             this.MinimizeBox = true;
             this.StartPosition = FormStartPosition.CenterScreen;
             this.BackColor = Color.FromArgb(30, 30, 30);
             this.ForeColor = Color.White;
 
-            int yPos = 20;
-            int labelWidth = 260;
-            int controlWidth = 120;
-            int padding = 10;
             int margin = 10;
 
-            // Calculate dynamic width based on form client size
-            int groupBoxWidth = this.ClientSize.Width - margin * 2;
-
-            // Browser processes settings
-            var grpBrowser = new GroupBox
+            // TabControl
+            tabControl = new TabControl
             {
-                Text = "Процессы браузера (zbe1)",
-                Location = new Point(margin, yPos),
-                Size = new Size(groupBoxWidth, 90),
-                ForeColor = Color.White,
-                Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right
+                Location = new Point(margin, margin),
+                Size = new Size(this.ClientSize.Width - margin * 2, this.ClientSize.Height - 60),
+                Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right
             };
-            this.Controls.Add(grpBrowser);
-            yPos = 25;
+            this.Controls.Add(tabControl);
 
-            var lblMaxMem = CreateLabel("Макс память (MB):", 20, yPos, labelWidth);
-            numMaxMemInstance = CreateNumeric(20 + labelWidth + padding, yPos, controlWidth, 100, 10000, 100);
-            numMaxMemInstance.Anchor = AnchorStyles.Top | AnchorStyles.Right;
-            grpBrowser.Controls.Add(lblMaxMem);
-            grpBrowser.Controls.Add(numMaxMemInstance);
-            yPos += 30;
+            // Create tabs
+            CreateKillerTab();
+            CreateMonitorTab();
+            CreateInterfaceTab();
 
-            var lblMaxAge = CreateLabel("Макс возраст (мин):", 20, yPos, labelWidth);
-            numMaxAgeInstance = CreateNumeric(20 + labelWidth + padding, yPos, controlWidth, 5, 1440, 5);
-            numMaxAgeInstance.Anchor = AnchorStyles.Top | AnchorStyles.Right;
-            grpBrowser.Controls.Add(lblMaxAge);
-            grpBrowser.Controls.Add(numMaxAgeInstance);
-
-            // Main process settings
-            yPos = 130;
-            var grpMain = new GroupBox
-            {
-                Text = "Главный процесс (ZennoPoster)",
-                Location = new Point(margin, yPos),
-                Size = new Size(groupBoxWidth, 60),
-                ForeColor = Color.White,
-                Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right
-            };
-            this.Controls.Add(grpMain);
-            yPos = 25;
-
-            var lblMaxMemZP = CreateLabel("Макс память (MB):", 20, yPos, labelWidth);
-            numMaxMemZP = CreateNumeric(20 + labelWidth + padding, yPos, controlWidth, 1000, 100000, 1000);
-            numMaxMemZP.Anchor = AnchorStyles.Top | AnchorStyles.Right;
-            grpMain.Controls.Add(lblMaxMemZP);
-            grpMain.Controls.Add(numMaxMemZP);
-
-            // Kill flags
-            yPos = 210;
-            var grpKill = new GroupBox
-            {
-                Text = "Параметры завершения",
-                Location = new Point(margin, yPos),
-                Size = new Size(groupBoxWidth, 110),
-                ForeColor = Color.White,
-                Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right
-            };
-            this.Controls.Add(grpKill);
-            yPos = 25;
-
-            chkKillOld = CreateCheckBox("Убивать старые процессы", 20, yPos);
-            grpKill.Controls.Add(chkKillOld);
-            yPos += 25;
-
-            chkKillHeavy = CreateCheckBox("Убивать тяжелые процессы", 20, yPos);
-            grpKill.Controls.Add(chkKillHeavy);
-            yPos += 25;
-
-            chkKillMain = CreateCheckBox("Убивать главный процесс (ОПАСНО!)", 20, yPos);
-            chkKillMain.ForeColor = Color.FromArgb(255, 100, 100);
-            grpKill.Controls.Add(chkKillMain);
-
-            // Auto-check and UI settings
-            yPos = 340;
-            var lblAutoCheck = CreateLabel("Автопроверка (мин, 0 = выкл):", 20, yPos, labelWidth);
-            numAutoCheckInterval = CreateNumeric(20 + labelWidth + padding, yPos, controlWidth, 0, 1440, 1);
-            numAutoCheckInterval.Anchor = AnchorStyles.Top | AnchorStyles.Right;
-            this.Controls.Add(lblAutoCheck);
-            this.Controls.Add(numAutoCheckInterval);
-            yPos += 30;
-
-            chkShowLogs = CreateCheckBox("Показывать логи", 20, yPos);
-            this.Controls.Add(chkShowLogs);
-            yPos += 30;
-
-            chkShowRawCommandLine = CreateCheckBox("Показывать полную командную строку (сырую)", 20, yPos);
-            this.Controls.Add(chkShowRawCommandLine);
-            yPos += 30;
-
-            chkEnableResourceMonitoring = CreateCheckBox("Включить мониторинг ресурсов (для отладки утечек памяти)", 20, yPos);
-            this.Controls.Add(chkEnableResourceMonitoring);
-            yPos += 30;
-
-            var lblResourceInterval = CreateLabel("Интервал мониторинга (мин):", 20, yPos, labelWidth);
-            numResourceMonitoringInterval = CreateNumeric(20 + labelWidth + padding, yPos, controlWidth, 1, 60, 1);
-            numResourceMonitoringInterval.Anchor = AnchorStyles.Top | AnchorStyles.Right;
-            this.Controls.Add(lblResourceInterval);
-            this.Controls.Add(numResourceMonitoringInterval);
-            yPos += 50;
-
-            // Buttons - positioned from the right edge
+            // Buttons at bottom
             int buttonWidth = 90;
             int buttonSpacing = 10;
+            int buttonY = this.ClientSize.Height - 40;
 
             btnCancel = new Button
             {
-                Text = "Отмена",
-                Location = new Point(this.ClientSize.Width - buttonWidth - margin, yPos),
+                Text = "Cancel",
+                Location = new Point(this.ClientSize.Width - buttonWidth - margin, buttonY),
                 Size = new Size(buttonWidth, 30),
                 FlatStyle = FlatStyle.Flat,
                 BackColor = Color.FromArgb(60, 60, 60),
@@ -165,8 +85,8 @@ namespace OtpTrayApp
 
             btnSave = new Button
             {
-                Text = "Сохранить",
-                Location = new Point(this.ClientSize.Width - buttonWidth * 2 - buttonSpacing - margin, yPos),
+                Text = "Save",
+                Location = new Point(this.ClientSize.Width - buttonWidth * 2 - buttonSpacing - margin, buttonY),
                 Size = new Size(buttonWidth, 30),
                 FlatStyle = FlatStyle.Flat,
                 BackColor = Color.FromArgb(0, 122, 204),
@@ -175,6 +95,180 @@ namespace OtpTrayApp
             };
             btnSave.Click += BtnSave_Click;
             this.Controls.Add(btnSave);
+        }
+
+        private void CreateKillerTab()
+        {
+            var tabPage = new TabPage("Killer")
+            {
+                BackColor = Color.FromArgb(30, 30, 30),
+                ForeColor = Color.White
+            };
+            tabControl.TabPages.Add(tabPage);
+
+            int yPos = 20;
+            int labelWidth = 250;
+            int controlWidth = 120;
+            int padding = 10;
+            int margin = 15;
+            int groupBoxWidth = tabPage.Width - margin * 2 - 25; // Account for scrollbar
+
+            // Browser processes group
+            var grpBrowser = new GroupBox
+            {
+                Text = "Browser Processes (zbe1)",
+                Location = new Point(margin, yPos),
+                Size = new Size(groupBoxWidth, 90),
+                ForeColor = Color.White,
+                Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right
+            };
+            tabPage.Controls.Add(grpBrowser);
+
+            var lblMaxMem = CreateLabel("Max Memory (MB):", 20, 25, labelWidth);
+            numMaxMemInstance = CreateNumeric(20 + labelWidth + padding, 25, controlWidth, 100, 10000, 100);
+            numMaxMemInstance.Anchor = AnchorStyles.Top | AnchorStyles.Right;
+            grpBrowser.Controls.Add(lblMaxMem);
+            grpBrowser.Controls.Add(numMaxMemInstance);
+
+            var lblMaxAge = CreateLabel("Max Age (min):", 20, 55, labelWidth);
+            numMaxAgeInstance = CreateNumeric(20 + labelWidth + padding, 55, controlWidth, 5, 1440, 5);
+            numMaxAgeInstance.Anchor = AnchorStyles.Top | AnchorStyles.Right;
+            grpBrowser.Controls.Add(lblMaxAge);
+            grpBrowser.Controls.Add(numMaxAgeInstance);
+
+            yPos += 110;
+
+            // Main process group
+            var grpMain = new GroupBox
+            {
+                Text = "Main Process (ZennoPoster)",
+                Location = new Point(margin, yPos),
+                Size = new Size(groupBoxWidth, 60),
+                ForeColor = Color.White,
+                Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right
+            };
+            tabPage.Controls.Add(grpMain);
+
+            var lblMaxMemZP = CreateLabel("Max Memory (MB):", 20, 25, labelWidth);
+            numMaxMemZP = CreateNumeric(20 + labelWidth + padding, 25, controlWidth, 1000, 100000, 1000);
+            numMaxMemZP.Anchor = AnchorStyles.Top | AnchorStyles.Right;
+            grpMain.Controls.Add(lblMaxMemZP);
+            grpMain.Controls.Add(numMaxMemZP);
+
+            yPos += 80;
+
+            // Kill settings group
+            var grpKill = new GroupBox
+            {
+                Text = "Kill Settings",
+                Location = new Point(margin, yPos),
+                Size = new Size(groupBoxWidth, 110),
+                ForeColor = Color.White,
+                Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right
+            };
+            tabPage.Controls.Add(grpKill);
+
+            chkKillOld = CreateCheckBox("Kill old processes", 20, 25, groupBoxWidth - 40);
+            grpKill.Controls.Add(chkKillOld);
+
+            chkKillHeavy = CreateCheckBox("Kill heavy processes", 20, 50, groupBoxWidth - 40);
+            grpKill.Controls.Add(chkKillHeavy);
+
+            chkKillMain = CreateCheckBox("Kill main process (DANGEROUS!)", 20, 75, groupBoxWidth - 40);
+            chkKillMain.ForeColor = Color.FromArgb(255, 100, 100);
+            grpKill.Controls.Add(chkKillMain);
+
+            yPos += 130;
+
+            // Auto-check setting
+            var lblAutoCheck = CreateLabel("Auto-check interval (min, 0=off):", margin, yPos, labelWidth);
+            numAutoCheckInterval = CreateNumeric(margin + labelWidth + padding, yPos, controlWidth, 0, 1440, 1);
+            numAutoCheckInterval.Anchor = AnchorStyles.Top | AnchorStyles.Right;
+            tabPage.Controls.Add(lblAutoCheck);
+            tabPage.Controls.Add(numAutoCheckInterval);
+        }
+
+        private void CreateMonitorTab()
+        {
+            var tabPage = new TabPage("Monitor")
+            {
+                BackColor = Color.FromArgb(30, 30, 30),
+                ForeColor = Color.White
+            };
+            tabControl.TabPages.Add(tabPage);
+
+            int yPos = 20;
+            int labelWidth = 250;
+            int controlWidth = 120;
+            int padding = 10;
+            int margin = 15;
+            int groupBoxWidth = tabPage.Width - margin * 2 - 25;
+
+            // Resource monitoring group
+            var grpMonitor = new GroupBox
+            {
+                Text = "Resource Monitoring",
+                Location = new Point(margin, yPos),
+                Size = new Size(groupBoxWidth, 120),
+                ForeColor = Color.White,
+                Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right
+            };
+            tabPage.Controls.Add(grpMonitor);
+
+            chkEnableResourceMonitoring = CreateCheckBox("Enable resource monitoring (for debugging memory leaks)", 20, 25, groupBoxWidth - 40);
+            grpMonitor.Controls.Add(chkEnableResourceMonitoring);
+
+            var lblInterval = CreateLabel("Monitoring interval (min):", 20, 55, labelWidth);
+            numResourceMonitoringInterval = CreateNumeric(20 + labelWidth + padding, 55, controlWidth, 1, 60, 1);
+            numResourceMonitoringInterval.Anchor = AnchorStyles.Top | AnchorStyles.Right;
+            grpMonitor.Controls.Add(lblInterval);
+            grpMonitor.Controls.Add(numResourceMonitoringInterval);
+
+            yPos += 140;
+
+            // Info label
+            var lblInfo = new Label
+            {
+                Text = "Resource monitoring collects memory usage data from ZennoPoster\n" +
+                       "and zbe1 processes. Reports are saved in the ./reports/ directory.\n\n" +
+                       "Use the 'Report' button in Process Stats to view the latest report.",
+                Location = new Point(margin, yPos),
+                Size = new Size(groupBoxWidth, 80),
+                ForeColor = Color.FromArgb(180, 180, 180),
+                AutoSize = false
+            };
+            tabPage.Controls.Add(lblInfo);
+        }
+
+        private void CreateInterfaceTab()
+        {
+            var tabPage = new TabPage("Interface")
+            {
+                BackColor = Color.FromArgb(30, 30, 30),
+                ForeColor = Color.White
+            };
+            tabControl.TabPages.Add(tabPage);
+
+            int yPos = 20;
+            int margin = 15;
+            int groupBoxWidth = tabPage.Width - margin * 2 - 25;
+
+            // UI settings group
+            var grpUI = new GroupBox
+            {
+                Text = "UI Settings",
+                Location = new Point(margin, yPos),
+                Size = new Size(groupBoxWidth, 100),
+                ForeColor = Color.White,
+                Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right
+            };
+            tabPage.Controls.Add(grpUI);
+
+            chkShowLogs = CreateCheckBox("Show logs", 20, 25, groupBoxWidth - 40);
+            grpUI.Controls.Add(chkShowLogs);
+
+            chkShowRawCommandLine = CreateCheckBox("Show raw command line", 20, 50, groupBoxWidth - 40);
+            grpUI.Controls.Add(chkShowRawCommandLine);
         }
 
         private Label CreateLabel(string text, int x, int y, int width)
@@ -196,19 +290,21 @@ namespace OtpTrayApp
                 Size = new Size(width, 20),
                 Minimum = min,
                 Maximum = max,
-                Increment = increment
+                Increment = increment,
+                BackColor = Color.FromArgb(45, 45, 45),
+                ForeColor = Color.White
             };
         }
 
-        private CheckBox CreateCheckBox(string text, int x, int y)
+        private CheckBox CreateCheckBox(string text, int x, int y, int width)
         {
             return new CheckBox
             {
                 Text = text,
                 Location = new Point(x, y),
-                Size = new Size(this.ClientSize.Width - x - 30, 20),
+                Size = new Size(width, 20),
                 ForeColor = Color.White,
-                Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right
+                AutoSize = false
             };
         }
 
@@ -248,8 +344,8 @@ namespace OtpTrayApp
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Ошибка сохранения настроек: {ex.Message}",
-                    "Ошибка", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show($"Error saving settings: {ex.Message}",
+                    "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
     }
