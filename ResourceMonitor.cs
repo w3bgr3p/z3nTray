@@ -138,10 +138,8 @@ namespace OtpTrayApp
                     StartTime = DateTime.Now
                 };
 
-                // Collect initial snapshot
-                CollectMetrics(null);
-
-                // Start timer with configured interval
+                // Start timer with configured interval - first collection happens after interval
+                // This prevents blocking the UI thread on startup
                 collectionTimer = new System.Threading.Timer(CollectMetrics, null, TimeSpan.FromMinutes(intervalMinutes), TimeSpan.FromMinutes(intervalMinutes));
                 isRunning = true;
             }
@@ -201,9 +199,29 @@ namespace OtpTrayApp
         }
 
         /// <summary>
-        /// Collect metrics from all processes
+        /// Collect metrics from all processes (async via ThreadPool)
         /// </summary>
         private void CollectMetrics(object state)
+        {
+            // Run in background thread to avoid blocking
+            System.Threading.ThreadPool.QueueUserWorkItem(_ =>
+            {
+                try
+                {
+                    CollectMetricsInternal();
+                }
+                catch (Exception ex)
+                {
+                    // Log error silently, don't crash the timer
+                    System.Diagnostics.Debug.WriteLine($"Error collecting metrics: {ex.Message}");
+                }
+            });
+        }
+
+        /// <summary>
+        /// Internal synchronous metrics collection
+        /// </summary>
+        private void CollectMetricsInternal()
         {
             lock (lockObj)
             {
