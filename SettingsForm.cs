@@ -111,7 +111,7 @@ namespace OtpTrayApp
             int controlWidth = 120;
             int padding = 10;
             int margin = 15;
-            int groupBoxWidth = tabPage.Width - margin * 2 - 25; // Account for scrollbar
+            int groupBoxWidth = this.ClientSize.Width - margin * 4 - 25; // Account for margins and scrollbar
 
             // Browser processes group
             var grpBrowser = new GroupBox
@@ -126,13 +126,11 @@ namespace OtpTrayApp
 
             var lblMaxMem = CreateLabel("Max Memory (MB):", 20, 25, labelWidth);
             numMaxMemInstance = CreateNumeric(20 + labelWidth + padding, 25, controlWidth, 100, 10000, 100);
-            numMaxMemInstance.Anchor = AnchorStyles.Top | AnchorStyles.Right;
             grpBrowser.Controls.Add(lblMaxMem);
             grpBrowser.Controls.Add(numMaxMemInstance);
 
             var lblMaxAge = CreateLabel("Max Age (min):", 20, 55, labelWidth);
             numMaxAgeInstance = CreateNumeric(20 + labelWidth + padding, 55, controlWidth, 5, 1440, 5);
-            numMaxAgeInstance.Anchor = AnchorStyles.Top | AnchorStyles.Right;
             grpBrowser.Controls.Add(lblMaxAge);
             grpBrowser.Controls.Add(numMaxAgeInstance);
 
@@ -151,7 +149,6 @@ namespace OtpTrayApp
 
             var lblMaxMemZP = CreateLabel("Max Memory (MB):", 20, 25, labelWidth);
             numMaxMemZP = CreateNumeric(20 + labelWidth + padding, 25, controlWidth, 1000, 100000, 1000);
-            numMaxMemZP.Anchor = AnchorStyles.Top | AnchorStyles.Right;
             grpMain.Controls.Add(lblMaxMemZP);
             grpMain.Controls.Add(numMaxMemZP);
 
@@ -183,7 +180,6 @@ namespace OtpTrayApp
             // Auto-check setting
             var lblAutoCheck = CreateLabel("Auto-check interval (min, 0=off):", margin, yPos, labelWidth);
             numAutoCheckInterval = CreateNumeric(margin + labelWidth + padding, yPos, controlWidth, 0, 1440, 1);
-            numAutoCheckInterval.Anchor = AnchorStyles.Top | AnchorStyles.Right;
             tabPage.Controls.Add(lblAutoCheck);
             tabPage.Controls.Add(numAutoCheckInterval);
         }
@@ -202,7 +198,7 @@ namespace OtpTrayApp
             int controlWidth = 120;
             int padding = 10;
             int margin = 15;
-            int groupBoxWidth = tabPage.Width - margin * 2 - 25;
+            int groupBoxWidth = this.ClientSize.Width - margin * 4 - 25;
 
             // Resource monitoring group
             var grpMonitor = new GroupBox
@@ -220,7 +216,6 @@ namespace OtpTrayApp
 
             var lblInterval = CreateLabel("Monitoring interval (min):", 20, 55, labelWidth);
             numResourceMonitoringInterval = CreateNumeric(20 + labelWidth + padding, 55, controlWidth, 1, 60, 1);
-            numResourceMonitoringInterval.Anchor = AnchorStyles.Top | AnchorStyles.Right;
             grpMonitor.Controls.Add(lblInterval);
             grpMonitor.Controls.Add(numResourceMonitoringInterval);
 
@@ -251,7 +246,7 @@ namespace OtpTrayApp
 
             int yPos = 20;
             int margin = 15;
-            int groupBoxWidth = tabPage.Width - margin * 2 - 25;
+            int groupBoxWidth = this.ClientSize.Width - margin * 4 - 25;
 
             // UI settings group
             var grpUI = new GroupBox
@@ -287,12 +282,13 @@ namespace OtpTrayApp
             return new NumericUpDown
             {
                 Location = new Point(x, y),
-                Size = new Size(width, 25),
+                Size = new Size(width, 28),
                 Minimum = min,
                 Maximum = max,
                 Increment = increment,
                 BackColor = Color.FromArgb(45, 45, 45),
-                ForeColor = Color.White
+                ForeColor = Color.White,
+                BorderStyle = BorderStyle.FixedSingle
             };
         }
 
