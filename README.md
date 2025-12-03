@@ -120,7 +120,7 @@ IF mem > MaxMemoryForZennoposter AND KillMain → KILL ZennoPoster
 After killing main process:
 1. Waits for process exit (max 10s)
 2. Checks `Tasks.dat` file size
-3. If size = 0 → restores from `Tasks.1.dat`
+3. If size < 50 bytes → restores from `Tasks.1.dat`
 
 ### Auto-Check
 
@@ -198,7 +198,7 @@ Path.GetFileName() → "534"
 When killing main ZennoPoster:
 1. `proc.Kill()` → `proc.WaitForExit(10000)`
 2. Check file: `%AppData%\ZennoLab\ZennoPoster\7\ZennoPoster\Tasks.dat`
-3. If size = 0 bytes → corrupted backup
+3. If size < 50 bytes → corrupted backup
 4. Restore: `Tasks.1.dat` → `Tasks.dat`
 5. Execute before service restart
 
@@ -253,7 +253,7 @@ When killing main ZennoPoster:
 
 ### Tasks.dat not restored
 - Verify path: `%AppData%\ZennoLab\ZennoPoster\7\ZennoPoster\`
-- Check `Tasks.1.dat` exists and size > 0
+- Check `Tasks.1.dat` exists and size >= 50 bytes
 - Enable `ShowLogs` to see recovery process
 
 

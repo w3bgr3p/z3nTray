@@ -326,7 +326,7 @@ namespace OtpTrayApp
         }
 
         /// <summary>
-        /// Восстановить Tasks.dat из Tasks.1.dat если он пустой
+        /// Восстановить Tasks.dat из Tasks.1.dat если он поврежден (меньше 50 байт)
         /// </summary>
         private static void RestoreTasksIfEmpty(KillResult result)
         {
@@ -357,23 +357,23 @@ namespace OtpTrayApp
                 var fileInfo = new FileInfo(tasksFile);
                 result.Messages.Add($"📊 Размер Tasks.dat: {fileInfo.Length} байт");
 
-                if (fileInfo.Length == 0)
+                if (fileInfo.Length < 50)
                 {
-                    result.Messages.Add($"⚠ Tasks.dat ПУСТОЙ! Восстанавливаем из Tasks.1.dat...");
+                    result.Messages.Add($"⚠ Tasks.dat поврежден (меньше 50 байт)! Восстанавливаем из Tasks.1.dat...");
 
                     // Проверяем размер бэкапа
                     var backupInfo = new FileInfo(backupFile);
                     result.Messages.Add($"📊 Размер Tasks.1.dat: {backupInfo.Length} байт");
 
-                    if (backupInfo.Length == 0)
+                    if (backupInfo.Length < 50)
                     {
-                        result.Messages.Add($"❌ Tasks.1.dat тоже пустой! Восстановление невозможно.");
+                        result.Messages.Add($"❌ Tasks.1.dat тоже поврежден! Восстановление невозможно.");
                         return;
                     }
 
-                    // Удаляем пустой Tasks.dat
+                    // Удаляем поврежденный Tasks.dat
                     File.Delete(tasksFile);
-                    result.Messages.Add($"🗑 Удален пустой Tasks.dat");
+                    result.Messages.Add($"🗑 Удален поврежденный Tasks.dat");
 
                     // Копируем Tasks.1.dat → Tasks.dat
                     File.Copy(backupFile, tasksFile);
