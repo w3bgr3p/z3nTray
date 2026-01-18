@@ -302,8 +302,17 @@ namespace OtpTrayApp
                 lblStatus.ForeColor = Color.Red;
             }
         }
-
         private void BtnOpenReport_Click(object? sender, EventArgs e)
+        {
+            // Вместо пути к файлу открываем URL
+            System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
+            {
+                FileName = "http://localhost:10993/report",
+                UseShellExecute = true
+            });
+        }
+
+        private void BtnOpenReport_Click_(object? sender, EventArgs e)
         {
             try
             {

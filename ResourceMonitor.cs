@@ -1083,5 +1083,20 @@ namespace OtpTrayApp
         {
             Stop();
         }
+        
+        public static string GenerateHtmlReportStatic(AppSettings settings)
+        {
+            // Используем вашу существующую логику сборки HTML, 
+            // но вместо File.WriteAllText возвращаем string.
+            var stats = ProcessManager.GetProcessStats(settings);
+            StringBuilder sb = new StringBuilder();
+            sb.Append("<html><body style='background:#1e1e1e; color:white;'>");
+            sb.Append($"<h1>ZennoPoster Report - {DateTime.Now}</h1>");
+            // ... заполнение данными из stats ...
+            sb.Append("</body></html>");
+            return sb.ToString();
+        }
+        
+        
     }
 }

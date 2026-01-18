@@ -8,16 +8,19 @@ namespace OtpTrayApp
 {
     public class OtpTrayContext : ApplicationContext
     {
+        private ResourceMonitor? resourceMonitor;
         private NotifyIcon trayIcon;
         private OtpInputForm? currentForm;
         private ProcessStatsForm? statsForm;
-        private AppSettings settings;
+        private AppSettings _settings;
         private System.Windows.Forms.Timer? autoCheckTimer;
-        private ResourceMonitor? resourceMonitor;
+        private EmbeddedServer _server;
 
         public OtpTrayContext()
         {
-            settings = AppSettings.Load();
+            _settings = AppSettings.Load();
+            _server = new EmbeddedServer(_settings);
+            _server.Start(); // Запуск сервера при старте приложения
             
             trayIcon = new NotifyIcon()
             {
@@ -29,13 +32,13 @@ namespace OtpTrayApp
 
             trayIcon.MouseClick += TrayIcon_Click;
 
-            if (settings.AutoCheckInterval > 0)
+            if (_settings.AutoCheckInterval > 0)
             {
                 StartAutoCheck();
             }
 
             // Start resource monitoring if enabled
-            if (settings.EnableResourceMonitoring)
+            if (_settings.EnableResourceMonitoring)
             {
                 StartResourceMonitoring();
             }
@@ -142,7 +145,7 @@ namespace OtpTrayApp
                 return;
             }
 
-            statsForm = new ProcessStatsForm(settings);
+            statsForm = new ProcessStatsForm(_settings);
             statsForm.FormClosed += (s, e) => statsForm = null;
             statsForm.Show();
         }
@@ -151,7 +154,7 @@ namespace OtpTrayApp
         {
             try
             {
-                var result = ProcessManager.KillProcesses(settings);
+                var result = ProcessManager.KillProcesses(_settings);
 
                 // Create checkpoint if ZennoPoster was killed
                 if (result.KilledMain > 0 && resourceMonitor != null)
@@ -159,7 +162,7 @@ namespace OtpTrayApp
                     resourceMonitor.CreateCheckpoint("ZennoPosterKilled");
                 }
 
-                if (settings.ShowLogs)
+                if (_settings.ShowLogs)
                 {
                     var message = string.Join("\n", result.Messages);
                     message += $"\n\nУбито по времени: {result.KilledByTime}";
@@ -186,7 +189,7 @@ namespace OtpTrayApp
             }
             catch (Exception ex)
             {
-                if (settings.ShowLogs)
+                if (_settings.ShowLogs)
                 {
                     MessageBox.Show($"Ошибка выполнения Check & Kill: {ex.Message}",
                         "Ошибка", MessageBoxButtons.OK, MessageBoxIcon.Error);
@@ -196,13 +199,13 @@ namespace OtpTrayApp
 
         private void ShowSettings()
         {
-            var settingsForm = new SettingsForm(settings);
+            var settingsForm = new SettingsForm(_settings);
             if (settingsForm.ShowDialog() == DialogResult.OK)
             {
-                settings = settingsForm.Settings;
+                _settings = settingsForm.Settings;
 
                 // Update auto-check timer
-                if (settings.AutoCheckInterval > 0)
+                if (_settings.AutoCheckInterval > 0)
                 {
                     StartAutoCheck();
                 }
@@ -212,7 +215,7 @@ namespace OtpTrayApp
                 }
 
                 // Update resource monitoring
-                if (settings.EnableResourceMonitoring)
+                if (_settings.EnableResourceMonitoring)
                 {
                     StartResourceMonitoring();
                 }
@@ -236,7 +239,7 @@ namespace OtpTrayApp
             StopAutoCheck(); // Stop existing timer if any
 
             autoCheckTimer = new System.Windows.Forms.Timer();
-            autoCheckTimer.Interval = settings.AutoCheckInterval * 60 * 1000; // minutes to milliseconds
+            autoCheckTimer.Interval = _settings.AutoCheckInterval * 60 * 1000; // minutes to milliseconds
             autoCheckTimer.Tick += (s, e) => CheckAndKillNow();
             autoCheckTimer.Start();
         }
@@ -261,9 +264,9 @@ namespace OtpTrayApp
 
             resourceMonitor = new ResourceMonitor();
             resourceMonitor.Start(
-                settings.ResourceMonitoringIntervalMinutes,
-                settings.MaxMonitoringRecordsPerFile,
-                settings.MonitoringReportRetentionDays);
+                _settings.ResourceMonitoringIntervalMinutes,
+                _settings.MaxMonitoringRecordsPerFile,
+                _settings.MonitoringReportRetentionDays);
         }
 
         private void StopResourceMonitoring()
@@ -274,6 +277,26 @@ namespace OtpTrayApp
                 resourceMonitor.Dispose();
                 resourceMonitor = null;
             }
+        }
+        
+        protected override void Dispose(bool disposing)
+        {
+            if (disposing)
+            {
+                // Останавливаем сервер, если он был создан
+                _server?.Stop(); 
+
+                // Очищаем иконку
+                if (trayIcon != null)
+                {
+                    trayIcon.Visible = false;
+                    trayIcon.Dispose();
+                }
+
+                // Останавливаем мониторинг (используем ваш метод)
+                StopResourceMonitoring();
+            }
+            base.Dispose(disposing);
         }
 
         #endregion

@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <title>z3nTray | Live Logs</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: #0d1117;
+            color: #c9d1d9;
+            font-family: 'Iosevka', 'Monaco', monospace;
+            font-size: 11px;
+            overflow: hidden;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        h1,
+        .stats {
+            display: none;
+        }
+
+        .controls {
+            background: #161b22;
+            padding: 5px;
+            margin: 10px;
+            border-radius: 4px;
+            display: flex;
+            gap: 5px;
+            flex-wrap: wrap;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            flex-shrink: 0;
+        }
+
+        .controls select,
+        .controls input,
+        .controls button {
+            padding: 2px 8px;
+            font-size: 11px;
+        }
+
+        .controls button {
+            background: #238636;
+            cursor: pointer;
+        }
+
+        .controls button:hover {
+            background: #2ea043;
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .stat-card {
+            background: #161b22;
+            padding: 15px;
+            border-radius: 6px;
+            border-left: 3px solid #58a6ff;
+        }
+
+        .stat-card h3 {
+            font-size: 14px;
+            color: #8b949e;
+            margin-bottom: 8px;
+        }
+
+        .stat-card .value {
+            font-size: 24px;
+            font-weight: bold;
+        }
+
+        .logs-container {
+            background: #0d1117;
+            border: 1px solid #30363d;
+            margin: 0 10px 10px 10px;
+            flex: 1;
+            overflow-y: auto;
+            overflow-x: hidden;
+        }
+
+        .log-entry {
+            padding: 2px 8px;
+            border-left: 2px solid #555;
+            background: #0d1117;
+            border-bottom: 1px solid #21262d;
+            line-height: 1.2;
+        }
+
+        .log-header {
+            display: flex;
+            gap: 6px;
+            align-items: baseline;
+            white-space: nowrap;
+        }
+
+        .log-entry:hover {
+            background: #1c2128;
+        }
+
+        .log-entry.ERROR {
+            border-left-color: #f85149;
+            background: #2d1311;
+        }
+
+        .log-entry.WARN {
+            border-left-color: #d29922;
+        }
+
+        .level.ERROR {
+            color: #f85149;
+        }
+
+        .level.WARNING {
+            color: #d29922;
+        }
+
+        .level.INFO {
+            color: #58a6ff;
+        }
+
+        .timestamp {
+            color: #8b949e;
+        }
+
+        .machine {
+            color: #79c0ff;
+            background: #1f6feb20;
+            padding: 2px 6px;
+            border-radius: 3px;
+        }
+
+        .project {
+            color: #a371f7;
+            background: #8957e520;
+            padding: 2px 6px;
+            border-radius: 3px;
+        }
+
+        .account {
+            color: #7ee787;
+        }
+        
+        .session {
+            color: #8b949e;
+            padding: 2px 6px;
+            border-radius: 3px;
+        }
+
+        .port {
+            color: #8b949e;
+            padding: 2px 6px;
+            border-radius: 3px;
+        }
+
+        .pid {
+            color: #8b949e;
+            padding: 2px 6px;
+            border-radius: 3px;
+        }
+
+        .level {
+            font-weight: bold;
+            padding: 2px 6px;
+            border-radius: 3px;
+        }
+
+        .level.ERROR {
+            background: #da363320;
+            color: #f85149;
+        }
+
+        .level.WARNING {
+            background: #bb800920;
+            color: #d29922;
+        }
+
+        .level.INFO {
+            background: #1f6feb20;
+            color: #58a6ff;
+        }
+
+        .level.SUCCESS {
+            background: #23863620;
+            color: #3fb950;
+        }
+
+        .message {
+            color: #c9d1d9;
+            margin-top: 5px;
+        }
+
+        .extra {
+            margin-top: 8px;
+            background: #0d1117;
+            padding: 8px;
+            border-radius: 3px;
+            font-size: 12px;
+            color: #8b949e;
+            overflow-x: auto;
+        }
+
+        .log-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            width: 100%;
+        }
+
+        .machine,
+        .project,
+        .account,
+        .level,
+        .session,
+        .port,
+        .pid {
+            cursor: pointer;
+            transition: opacity 0.2s;
+        }
+
+        .machine:hover,
+        .project:hover,
+        .account:hover,
+        .level:hover,
+        .session:hover,
+        .port:hover,
+        .pid:hover {
+            opacity: 0.7;
+            text-decoration: underline;
+        }
+
+        ::-webkit-scrollbar {
+            width: 10px;
+            height: 10px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #0d1117;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #30363d;
+            border-radius: 5px;
+        }
+    </style>
+</head>
+
+<body>
+<h1>🔥 z3nTray Live Logs</h1>
+
+<div class="stats" id="stats"></div>
+
+<div class="controls">
+    <select id="levelFilter" onchange="refresh()">
+        <option value="">All Levels</option>
+        <option value="ERROR">🔴 Errors</option>
+        <option value="WARNING">🟡 Warnings</option>
+        <option value="INFO">🔵 Info</option>
+        <option value="SUCCESS">🟢 Success</option>
+    </select>
+
+    <select id="machineFilter" onchange="refresh()">
+        <option value="">All Machines</option>
+    </select>
+
+    <select id="projectFilter" onchange="refresh()">
+        <option value="">All Projects</option>
+    </select>
+
+    <select id="sessionFilter" onchange="refresh()">
+        <option value="">All Sessions</option>
+    </select>
+
+    <select id="portFilter" onchange="refresh()">
+        <option value="">All Ports</option>
+    </select>
+
+    <select id="pidFilter" onchange="refresh()">
+        <option value="">All PIDs</option>
+    </select>
+
+    <input type="number" id="limitInput" value="200" min="10" max="1000" step="10" onchange="refresh()">
+
+    <button onclick="refresh()">🔄 Refresh</button>
+    <button onclick="toggleAutoRefresh()">⏸️ Auto: <span id="autoStatus">ON</span></button>
+    <button onclick="clearFilters()">✖️ Reset Filters</button>
+    <button onclick="clearLogServer()" style="background: #da3633;">🗑️ Clear Logs</button>
+</div>
+
+<div class="logs-container" id="logs"></div>
+
+<script>
+    const SERVER = window.location.origin;
+    let autoRefresh = true;
+    let autoRefreshInterval = null;
+
+    async function loadStats() {
+        try {
+            const response = await fetch(`${SERVER}/stats`);
+            const stats = await response.json();
+            updateFilters(stats);
+        } catch (e) { console.error('Stats failed:', e); }
+    }
+
+    function updateFilters(stats) {
+        const mFilter = document.getElementById('machineFilter');
+        const pFilter = document.getElementById('projectFilter');
+        const sFilter = document.getElementById('sessionFilter');
+        const portFilter = document.getElementById('portFilter');
+        const pidFilter = document.getElementById('pidFilter');
+
+        const curM = mFilter.value;
+        const curP = pFilter.value;
+        const curS = sFilter.value;
+        const curPort = portFilter.value;
+        const curPid = pidFilter.value;
+
+        if (stats.byMachine) {
+            mFilter.innerHTML = '<option value="">All Machines</option>' +
+                Object.keys(stats.byMachine).map(m => `<option value="${m}" ${m === curM ? 'selected' : ''}>${m}</option>`).join('');
+        }
+        if (stats.byProject) {
+            pFilter.innerHTML = '<option value="">All Projects</option>' +
+                Object.keys(stats.byProject).map(p => `<option value="${p}" ${p === curP ? 'selected' : ''}>${p}</option>`).join('');
+        }
+        if (stats.bySession) {
+            const sessionKeys = Object.keys(stats.bySession);
+            sessionKeys.sort((a, b) => b - a);
+            sFilter.innerHTML = '<option value="">All Sessions</option>' +
+                sessionKeys.map(s => `<option value="${s}" ${s === curS ? 'selected' : ''}>${s}</option>`).join('');
+        }
+        if (stats.byPort) {
+            const portKeys = Object.keys(stats.byPort);
+            portKeys.sort();
+            portFilter.innerHTML = '<option value="">All Ports</option>' +
+                portKeys.map(p => `<option value="${p}" ${p === curPort ? 'selected' : ''}>${p}</option>`).join('');
+        }
+        if (stats.byPid) {
+            const pidKeys = Object.keys(stats.byPid);
+            pidKeys.sort((a, b) => b - a);
+            pidFilter.innerHTML = '<option value="">All PIDs</option>' +
+                pidKeys.map(p => `<option value="${p}" ${p === curPid ? 'selected' : ''}>${p}</option>`).join('');
+        }
+    }
+
+    async function refresh() {
+        const level = document.getElementById('levelFilter').value;
+        const machine = document.getElementById('machineFilter').value;
+        const project = document.getElementById('projectFilter').value;
+        const session = document.getElementById('sessionFilter').value;
+        const port = document.getElementById('portFilter').value;
+        const pid = document.getElementById('pidFilter').value;
+        const limit = document.getElementById('limitInput').value;
+        console.log('Selected level:', level);
+        let url = `${SERVER}/logs?limit=${limit}`;
+        if (level) url += `&level=${level}`;
+        if (machine) url += `&machine=${encodeURIComponent(machine)}`;
+        if (project) url += `&project=${encodeURIComponent(project)}`;
+        if (session) url += `&session=${encodeURIComponent(session)}`;
+        if (port) url += `&port=${encodeURIComponent(port)}`;
+        if (pid) url += `&pid=${encodeURIComponent(pid)}`;
+
+        try {
+            const response = await fetch(url);
+            const logs = await response.json();
+
+            const container = document.getElementById('logs');
+            container.innerHTML = logs.map(log => {
+                const extraStr = log.extra ? JSON.stringify(log.extra) : '';
+                return `
+                    <div class="log-entry ${log.level}">
+                        <div class="log-header">
+                            <span class="timestamp">${new Date(log.timestamp).toLocaleTimeString()}</span>
+                            <span class="machine" onclick="setFilter('machineFilter', '${log.machine}')">[${log.machine}]</span>        
+                            <span class="project" onclick="setFilter('projectFilter', '${log.project}')">${log.project}</span>        
+                            <span class="level ${log.level}" onclick="setFilter('levelFilter', '${log.level}')">${log.level}</span>      
+                            <span class="account">${log.account}</span>          
+                            <span style="color: #6e7681; font-size: 11px;">${extraStr}</span>
+                            <span class="session" onclick="setFilter('sessionFilter', '${log.session}')">session:${log.session}</span>
+                            <span class="port" onclick="setFilter('portFilter', '${log.port}')">port:${log.port}</span>
+                            <span class="pid" onclick="setFilter('pidFilter', '${log.pid}')">pid:${log.pid}</span>
+                        </div>
+                        <div class="message">${escapeHtml(log.message)}</div>
+                    </div>
+                    `;
+            }).join('');
+
+            await loadStats();
+        } catch (e) { console.error('Refresh failed:', e); }
+    }
+
+    function escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+
+    function toggleAutoRefresh() {
+        autoRefresh = !autoRefresh;
+        document.getElementById('autoStatus').textContent = autoRefresh ? 'ON' : 'OFF';
+        if (autoRefresh) autoRefreshInterval = setInterval(refresh, 3000);
+        else clearInterval(autoRefreshInterval);
+    }
+
+    function clearFilters() {
+        document.getElementById('levelFilter').value = '';
+        document.getElementById('machineFilter').value = '';
+        document.getElementById('projectFilter').value = '';
+        document.getElementById('sessionFilter').value = '';
+        document.getElementById('portFilter').value = '';
+        document.getElementById('pidFilter').value = '';
+        refresh();
+    }
+
+    async function clearLogServer() {
+        if (!confirm("Удалить все логи с сервера?")) return;
+        try {
+            await fetch(`${SERVER}/clear`, { method: 'POST' });
+            refresh();
+        } catch (e) { console.error('Clear failed:', e); }
+    }
+
+    function setFilter(filterId, value) {
+        const filterElement = document.getElementById(filterId);
+        if (filterElement) {
+            filterElement.value = value;
+
+            if (filterElement.value !== value) {
+                const opt = document.createElement('option');
+                opt.value = value;
+                opt.innerHTML = value;
+                filterElement.appendChild(opt);
+                filterElement.value = value;
+            }
+
+            refresh();
+        }
+    }
+
+    refresh();
+    autoRefreshInterval = setInterval(refresh, 3000);
+</script>
+</body>
+
+</html>
