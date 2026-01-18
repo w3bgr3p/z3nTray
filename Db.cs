@@ -27,7 +27,7 @@ namespace z3nCore
 
         public Db(
             string dbMode = "SQLite",
-            string sqLitePath = null,
+            string sqLitePath = "",
             string pgHost = "localhost",
             string pgPort = "5432",
             string pgDbName = "postgres",

@@ -7,6 +7,12 @@
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
         <ApplicationIcon>icon.ico</ApplicationIcon>
+
+        <!-- Настройки для single-file exe -->
+        <PublishSingleFile>true</PublishSingleFile>
+        <SelfContained>false</SelfContained>
+        <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+        <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
     </PropertyGroup>
 
     <ItemGroup>
@@ -24,13 +30,31 @@
     </ItemGroup>
 
     <ItemGroup>
-      <AdditionalFiles Remove="app.manifest" />
+        <AdditionalFiles Remove="app.manifest" />
     </ItemGroup>
 
     <ItemGroup>
-      <None Update="dashboard.html">
-        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-      </None>
+        <None Update="dashboard.html">
+            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+        </None>
+        <None Update="releases\dashboard.html">
+          <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+        </None>
     </ItemGroup>
+
+    <Target Name="CopyToReleases" AfterTargets="Build" Condition="'$(Configuration)' == 'Release'">
+        <PropertyGroup>
+            <ReleasesFolder>$(ProjectDir)releases\</ReleasesFolder>
+        </PropertyGroup>
+
+        <MakeDir Directories="$(ReleasesFolder)" Condition="!Exists('$(ReleasesFolder)')" />
+
+        <Copy
+                SourceFiles="$(PublishDir)$(TargetName).exe"
+                DestinationFiles="$(ReleasesFolder)$(TargetName).exe"
+                SkipUnchangedFiles="true" />
+
+        <Message Text="Copied $(TargetName).exe to $(ReleasesFolder)" Importance="high" />
+    </Target>
 
 </Project>
